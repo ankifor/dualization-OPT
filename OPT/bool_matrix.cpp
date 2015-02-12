@@ -15,46 +15,47 @@ static void read_into_vector(FILE* p_file, vector<char>& buffer, int& m, int& n)
 	while (state<10) {
 		ch = fgetc(p_file);
 		switch (state) {
-		case 0:
-			if (ch == '0' || ch == '1') {
-				buffer.push_back(ch - '0');
+			case 0:
+				if (ch == '0' || ch == '1') {
+					buffer.push_back(ch - '0');
+					if (m == 0) 
+						n++;
+					state = 1;
+				} else if (ch == ' ') {
+					state = 0;//skip
+				} else if (ch == EOF || ch == '\n') {
+					state = 11;
+				} else {
+					state = 10;//error
+				}
+				break;
+			case 1:
+				if (ch == ' ') {
+					state = 2;
+				} else if (ch == '\n') {
+					m++;
+					state = 0;
+				} else {
+					state = 10;
+				}
+				break;
+			case 2:
+				if (ch == '0' || ch == '1') {
+					buffer.push_back(ch - '0');
 				if (m == 0) n++;
-				state = 1;
-			} else if (ch == ' ') {
-				state = 0;//skip
-			} else if (ch == EOF || ch == '\n') {
-				state = 11;
-			} else {
-				state = 10;//error
-			}
-			break;
-		case 1:
-			if (ch == ' ') {
-				state = 2;
-			} else if (ch == '\n') {
+					state = 1;
+				} else if (ch == ' ') {
+					state = 2;//skip
+				} else if (ch == '\n') {
 				m++;
-				state = 0;
-			} else {
+					state = 0;
+				} else {
+					state = 10;//error
+				}
+				break;
+			default:
 				state = 10;
-			}
-			break;
-		case 2:
-			if (ch == '0' || ch == '1') {
-				buffer.push_back(ch - '0');
-				if (m == 0) n++;
-				state = 1;
-			} else if (ch == ' ') {
-				state = 2;//skip
-			} else if (ch == '\n') {
-				m++;
-				state = 0;
-			} else {
-				state = 10;//error
-			}
-			break;
-		default:
-			state = 10;
-			break;
+				break;
 		}//switch
 	}//while
 	if (buffer.size() != n*m)
@@ -87,49 +88,49 @@ void Bool_Matrix::clear() {
 }
 
 void Bool_Matrix::copy(const Bool_Matrix& src) {
-  init(src.m_,src.n_);
-  memcpy(data_,src.data_,sz_);
+	init(src.m_,src.n_);
+	memcpy(data_,src.data_,sz_);
 }
 
 void Bool_Matrix::copy(const char* src, int m, int n) {
-  init(m,n);
-  memcpy(data_,src,sz_);
+	init(m,n);
+	memcpy(data_,src,sz_);
 }
 
 void Bool_Matrix::move(char** src, int m, int n) {
-  clear();
-  m_=m; n_=n; sz_ = (m*n+7)/8;
-  data_ = *src; *src = NULL;
+	clear();
+	m_=m; n_=n; sz_ = (m*n+7)/8;
+	data_ = *src; *src = NULL;
 }
 
 
 int Bool_Matrix::read(const string& file_name) {
-  FILE* p_file = fopen(file_name.c_str(),"r");
+	FILE* p_file = fopen(file_name.c_str(),"r");
 	if (p_file == NULL) {
 		return 1;
 	}
-  read(p_file);
-  fclose(p_file);
+	read(p_file);
+	fclose(p_file);
 	return 0;
 }
 
 int Bool_Matrix::read(const char* file_name) {
-  FILE* p_file = fopen(file_name,"r");
+	FILE* p_file = fopen(file_name,"r");
 	if (p_file == NULL) {
 		return 1;
 	}
-  read(p_file);
-  fclose(p_file);
+	read(p_file);
+	fclose(p_file);
 	return 0;
 }
 
 int Bool_Matrix::print(const string& file_name, const char* mode) const {
-  FILE* p_file = fopen(file_name.c_str(), mode);
+	FILE* p_file = fopen(file_name.c_str(), mode);
 	if (p_file == NULL) {
 		return 1;
 	}
-  print(p_file);
-  fclose(p_file);
+	print(p_file);
+	fclose(p_file);
 	return 0;
 }
 
@@ -144,18 +145,18 @@ void Bool_Matrix::print(FILE* p_file) const {
 }
 
 void Bool_Matrix::random(int m, int n, float d, unsigned seed) {
-  init(m,n);
-  int threshold = int(RAND_MAX * d);
+	init(m,n);
+	int threshold = int(RAND_MAX * d);
 	char tmp = 0;
 	if (seed == 0)
 		seed = time(NULL);
-  srand(seed);	
-  for (int i = 0; i < m_; ++i) {
+	srand(seed);	
+	for (int i = 0; i < m_; ++i) {
 		for (int j = 0; j < n_; ++j) {
 			tmp = (rand() < threshold ? 1 << (j & 0x7) : 0);
 			data_[i*nb_ + j / 8] |= tmp;
 		}      
-  }
+	}
 }
 
 void Bool_Matrix::read(FILE* p_file) {
