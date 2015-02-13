@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <vector>
+#include <stdexcept>
 #include "bool_matrix.h"
 
 using namespace std;
@@ -61,7 +62,7 @@ static void read_into_vector(FILE* p_file, vector<char>& buffer, int& m, int& n)
 	if (buffer.size() != n*m)
 		state = 10;
 	if (state == 10)
-		exit(1);
+		throw std::runtime_error("Invalid file format");
 }
 
 void Bool_Matrix::init(int m, int n) {
@@ -75,6 +76,8 @@ void Bool_Matrix::init(int m, int n) {
 	} else if (sz_ >= sz_old) {
 		data_ = static_cast<char*>(realloc(data_, sz_));
 	}
+	if (data_ == NULL)
+		throw std::runtime_error("Allocation memory error");
 	memset(data_, 0, sz_);
 }
 
@@ -104,34 +107,31 @@ void Bool_Matrix::move(char** src, int m, int n) {
 }
 
 
-int Bool_Matrix::read(const string& file_name) {
+void Bool_Matrix::read(const string& file_name) {
 	FILE* p_file = fopen(file_name.c_str(),"r");
 	if (p_file == NULL) {
-		return 1;
+		throw std::runtime_error(std::strerror(errno));
 	}
 	read(p_file);
 	fclose(p_file);
-	return 0;
 }
 
-int Bool_Matrix::read(const char* file_name) {
+void Bool_Matrix::read(const char* file_name) {
 	FILE* p_file = fopen(file_name,"r");
 	if (p_file == NULL) {
-		return 1;
+		throw std::runtime_error(std::strerror(errno));
 	}
 	read(p_file);
 	fclose(p_file);
-	return 0;
 }
 
-int Bool_Matrix::print(const string& file_name, const char* mode) const {
+void Bool_Matrix::print(const string& file_name, const char* mode) const {
 	FILE* p_file = fopen(file_name.c_str(), mode);
 	if (p_file == NULL) {
-		return 1;
+		throw std::runtime_error(std::strerror(errno));
 	}
 	print(p_file);
 	fclose(p_file);
-	return 0;
 }
 
 void Bool_Matrix::print(FILE* p_file) const {
@@ -153,8 +153,8 @@ void Bool_Matrix::random(int m, int n, float d, unsigned seed) {
 	srand(seed);	
 	for (int i = 0; i < m_; ++i) {
 		for (int j = 0; j < n_; ++j) {
-			tmp = (rand() < threshold ? 1 << (j & 0x7) : 0);
-			data_[i*nb_ + j / 8] |= tmp;
+			tmp = (rand() < threshold ? 1 : 0);
+			set(i, j, tmp);
 		}      
 	}
 }
@@ -172,9 +172,19 @@ void Bool_Matrix::read(const std::vector<char>& data, int m, int n) {
 	char tmp = 0;
 	for (int i = 0; i < m; ++i) {
 		for (int j = 0; j < n; ++j) {
-			tmp = data[i*n + j] << (j & 0x7);
-			data_[i*nb_ + j / 8] |= tmp;
+			tmp = data[i*n + j];
+			set(i, j, tmp);
 		}
 	}
 }
 
+void Bool_Matrix::copy_and_transpose(const Bool_Matrix& src) {
+	init(src.n_, src.m_);
+	char tmp = 0;
+	for (int i = 0; i < src.m_; ++i) {
+		for (int j = 0; j < src.n_; ++j) {
+			tmp = src.at(i, j);
+			set(j, i, tmp);
+		}
+	}
+}
