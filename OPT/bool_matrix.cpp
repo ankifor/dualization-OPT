@@ -1,60 +1,113 @@
 #include <time.h>
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
+#include <memory.h>
 #include <vector>
 #include <stdexcept>
+#include <intrin.h>
 #include "bool_matrix.h"
 
 using namespace std;
 
-#define _POW2(x) 1<<(x)
-#define _POW2_10(x) _POW2(x),_POW2(x+1),_POW2(x+2),_POW2(x+3),_POW2(x+4),_POW2(x+5),_POW2(x+6),_POW2(x+7),_POW2(x+8),_POW2(x+9)
-static const char POW2[32] = { _POW2_10(0), _POW2_10(10), _POW2_10(20), _POW2(30), _POW2(31) };
-#undef _POW2_10
-#undef _POW2
-
-const static uint32_t BITS = 32;
-const static uint32_t LOG2BITS = 5;
-const static uint32_t MASK = BITS-1;
-const static size_t SIZE = 4;//sizeof(uint32_t)
-
-char Bool_Matrix::at(uint32_t i, uint32_t j) const {
-	uint32_t ind = i*n32_ + (j / BITS);
-	return (data_[ind] >> (j & MASK)) & 1;
+static const ui32 POW2(ui32 x) {
+	return 1 << x;
 }
 
-void Bool_Matrix::set(uint32_t i, uint32_t j, char value) {
-	uint32_t ind = i*n32_ + (j / BITS);
-	data_[ind] = (data_[ind] & ~POW2[j & MASK]) | (value << (j & MASK));
+ui32 Bool_Matrix::find_next(ui32 j) const {
+	ui32 ind = j >> LOG2BIT;
+	//ui32 max_ind =  (n_ + BITS - 1) >> LOG2BIT;
+	ui32 offset = j & MASK;
+	ui32 buf = (data_[ind] >> offset) << offset;
+
+	while (ind < n32_) {
+		offset = _tzcnt_u32(buf);//BITS==32
+		if (offset == BITS) {
+			++ind;
+			buf = data_[ind];
+		} else {
+			break;
+		}
+	}
+	return (ind << LOG2BIT) + offset;
+}
+
+ui32 Bool_Matrix::popcount() const throw() {
+	ui32 sum = 0;
+	ui32 ind = 0;
+	for (ind = 0; ind < n32_-1; ++ind) {
+		sum += __popcnt(data_[ind]);
+	}
+	ui32 mask = ALL >> (BITS - (n_ & MASK));
+	sum += __popcnt(data_[ind] & mask);
+	return sum;
+}
+
+char Bool_Matrix::at(ui32 i, ui32 j) const {
+	ui32 ind = i*n32_ + (j >> LOG2BIT);
+	return _bittest(reinterpret_cast<const long*>(data_+ind), j & MASK);
+	//return (data_[ind] >> (j & MASK)) & 1;
+}
+
+char Bool_Matrix::at(ui32 j) const {
+	ui32 ind = (j >> LOG2BIT);
+	return _bittest(reinterpret_cast<const long*>(data_ + ind), j & MASK);
+	//return (data_[ind] >> (j & MASK)) & 1;
+}
+
+void Bool_Matrix::set(ui32 i, ui32 j) {
+	ui32 ind = i*n32_ + (j >> LOG2BIT);
+	_bittestandset(reinterpret_cast<long*>(data_ + ind), j & MASK);
+	//data_[ind] = (data_[ind] & ~POW2(j & MASK)) | (1 << (j & MASK));
 	//data_[ind] |= (value << (j & 0x7)); 
 }
+void Bool_Matrix::set(ui32 j) {
+	ui32 ind = (j >> LOG2BIT);
+	_bittestandset(reinterpret_cast<long*>(data_ + ind), j & MASK);
+}
 
-uint32_t* Bool_Matrix::row(uint32_t i) {
-	return & data_[i*n32_];
+void Bool_Matrix::reset(ui32 i, ui32 j) {
+	ui32 ind = i*n32_ + (j >> LOG2BIT);
+	_bittestandreset(reinterpret_cast<long*>(data_ + ind), j & MASK);
+}
+
+void Bool_Matrix::reset(ui32 j) {
+	ui32 ind = (j >> LOG2BIT);
+	_bittestandreset(reinterpret_cast<long*>(data_ + ind), j & MASK);
+}
+
+ui32* Bool_Matrix::row(ui32 i) {
+	return &data_[i*n32_];
+}
+
+const ui32* Bool_Matrix::row(ui32 i) const {
+	return &data_[i*n32_];
 }
 
 void Bool_Matrix::copy(const Bool_Matrix& src) {
-	init(src.m_, src.n_);
-	memcpy(data_, src.data_, sz32_*SIZE);
+	if (this != &src) {
+		init(src.m_, src.n_);
+		memcpy(data_, src.data_, sz32_*SIZE);
+	}
 }
 
 void Bool_Matrix::swap(Bool_Matrix& src) {
-	uint32_t m = m_;
-	uint32_t n = n_;
-	uint32_t sz32 = sz32_;
-	uint32_t* data = data_;
-	m_ = src.m_;
-	n_ = src.n_;
-	sz32_ = src.sz32_;
-	data_ = src.data_;
-	src.m_ = m;
-	src.n_ = n;
-	src.sz32_ = sz32;
-	src.data_ = data;
+	if (this != &src) {
+		ui32 m = m_;
+		ui32 n = n_;
+		ui32 sz32 = sz32_;
+		ui32* data = data_;
+		m_ = src.m_;
+		n_ = src.n_;
+		sz32_ = src.sz32_;
+		data_ = src.data_;
+		src.m_ = m;
+		src.n_ = n;
+		src.sz32_ = sz32;
+		src.data_ = data;
+	}
 }
 
-static void read_into_vector(FILE* p_file, vector<char>& buffer, uint32_t& m, uint32_t& n) {
+static void read_into_vector(FILE* p_file, vector<char>& buffer, ui32& m, ui32& n) {
 	char ch = 0;
 	char state = 0;
 	n = 0;
@@ -115,20 +168,20 @@ static void read_into_vector(FILE* p_file, vector<char>& buffer, uint32_t& m, ui
 		throw std::runtime_error("Invalid file format");
 }
 
-void Bool_Matrix::init(uint32_t m, uint32_t n) {
+void Bool_Matrix::init(ui32 m, ui32 n, char value) {
 	m_ = m;
 	n_ = n;
 	n32_ = (n + BITS - 1) / BITS;
-	uint32_t sz32_old = sz32_;
+	ui32 sz32_old = sz32_;
 	sz32_ = m*n32_;
 	if (data_ == nullptr) {
-		data_ = static_cast<uint32_t*>(malloc(sz32_*SIZE));
+		data_ = static_cast<ui32*>(malloc(sz32_*SIZE));
 	} else if (sz32_ >= sz32_old) {
-		data_ = static_cast<uint32_t*>(realloc(data_, sz32_*SIZE));
+		data_ = static_cast<ui32*>(realloc(data_, sz32_*SIZE));
 	}
 	if (data_ == nullptr)
 		throw std::runtime_error("Allocation memory error");
-	//memset(data_, 0, sz32_*SIZE);
+	memset(data_, value, sz32_*SIZE);
 }
 
 void Bool_Matrix::clear() {
@@ -170,48 +223,46 @@ void Bool_Matrix::print(const string& file_name, const char* mode) const {
 }
 
 void Bool_Matrix::print(FILE* p_file) const {
-	uint32_t count = 0;
-	for (uint32_t i = 0; i < m_; ++i) {
-		for (uint32_t j = 0; j < n_; ++j) {
-			count += at(i, j);
+	for (ui32 i = 0; i < m_; ++i) {
+		for (ui32 j = 0; j < n_; ++j) {
 			fputc((at(i, j) != 0) + '0', p_file);
 			fputc(' ', p_file);
 		}
-		fprintf(p_file,"\n%d", count);
 		fputc('\n', p_file);
 	}
 }
 
-void Bool_Matrix::random(uint32_t m, uint32_t n, float d, unsigned seed) {
+void Bool_Matrix::random(ui32 m, ui32 n, float d, unsigned seed) {
 	init(m,n);
-	uint32_t threshold = uint32_t(RAND_MAX * d);
+	ui32 threshold = ui32(RAND_MAX * d);
 	char tmp = 0;
 	if (seed == 0)
 		seed = static_cast<unsigned>(time(nullptr));
 	srand(seed);	
-	for (uint32_t i = 0; i < m_; ++i) {
-		for (uint32_t j = 0; j < n_; ++j) {
-			tmp = (static_cast<uint32_t>(rand()) < threshold ? 0x1 : 0x0);
-			set(i, j, tmp);
+	for (ui32 i = 0; i < m_; ++i) {
+		for (ui32 j = 0; j < n_; ++j) {
+			if (static_cast<ui32>(rand()) < threshold)
+				set(i, j);
 		}      
 	}
 }
 
-void Bool_Matrix::read(FILE* p_file) {
+void Bool_Matrix::read(FILE* p_file, ui32 size) {
 	vector<char> buffer;
-	uint32_t m = 0;
-	uint32_t n = 0;
+	buffer.reserve(size);
+	ui32 m = 0;
+	ui32 n = 0;
 	read_into_vector(p_file, buffer, m, n);
 	read(buffer, m, n);
 }
 
-void Bool_Matrix::read(const std::vector<char>& data, uint32_t m, uint32_t n) {
+void Bool_Matrix::read(const std::vector<char>& data, ui32 m, ui32 n) {
 	init(m, n);
 	char tmp = 0;
-	for (uint32_t i = 0; i < m; ++i) {
-		for (uint32_t j = 0; j < n; ++j) {
-			tmp = data[i*n + j];
-			set(i, j, tmp);
+	for (ui32 i = 0; i < m; ++i) {
+		for (ui32 j = 0; j < n; ++j) {
+			if (data[i*n + j])
+				set(i, j);
 		}
 	}
 }
@@ -219,22 +270,40 @@ void Bool_Matrix::read(const std::vector<char>& data, uint32_t m, uint32_t n) {
 void Bool_Matrix::copy_and_transpose(const Bool_Matrix& src) {
 	init(src.n_, src.m_);
 	char tmp = 0;
-	for (uint32_t i = 0; i < src.m_; ++i) {
-		for (uint32_t j = 0; j < src.n_; ++j) {
-			tmp = src.at(i, j);
-			set(j, i, tmp);
+	for (ui32 i = 0; i < src.m_; ++i) {
+		for (ui32 j = 0; j < src.n_; ++j) {
+			if (src.at(i, j))
+				set(j, i);
 		}
 	}
 }
 
-Bool_Matrix::Bool_Matrix(uint32_t m, uint32_t n) : data_(nullptr), n_(0), m_(0), sz32_(0), n32_(0) {
+
+
+Bool_Matrix::Bool_Matrix(ui32 m, ui32 n) : data_(nullptr), n_(0), m_(0), sz32_(0), n32_(0) {
 	init(m, n);
-	memset(data_, 0, sz32_*SIZE);
 }
 
-Bool_Matrix::Bool_Matrix(uint32_t n) : data_(nullptr), n_(0), m_(0), sz32_(0), n32_(0) {
+Bool_Matrix::Bool_Matrix(ui32 n) : data_(nullptr), n_(0), m_(0), sz32_(0), n32_(0) {
 	init(1, n);
-	memset(data_, 0, sz32_*SIZE);
+}
+
+Bool_Matrix::Bool_Matrix(const Bool_Matrix& src) : data_(nullptr), n_(0), m_(0), sz32_(0), n32_(0) {
+	copy(src);
+}
+
+Bool_Matrix::Bool_Matrix(const Bool_Matrix& src, const Bool_Matrix& rows) 
+	: data_(nullptr), n_(0), m_(0), sz32_(0), n32_(0) 
+{
+	init(rows.popcount(), src.n_);
+	for (ui32 j = rows.find_next(0), k = 0; j < rows.width(); j = rows.find_next(j + 1), ++k) {
+		memcpy(row(k), src.row(j), n32_*SIZE);
+	}
+}
+
+Bool_Matrix& Bool_Matrix::operator= (const Bool_Matrix& src) {
+	copy(src);
+	return *this;
 }
 
 Bool_Matrix::Bool_Matrix() : data_(nullptr), n_(0), m_(0), sz32_(0), n32_(0) {
@@ -243,3 +312,5 @@ Bool_Matrix::Bool_Matrix() : data_(nullptr), n_(0), m_(0), sz32_(0), n32_(0) {
 Bool_Matrix::~Bool_Matrix() {
 	clear();
 }
+
+

@@ -1,45 +1,55 @@
 #pragma once
 #include <vector>
 #include <string>
-#include <cstdint>
+#include "my_int.h"
+
 
 //matrix elements are stored by rows
 class Bool_Matrix {
 public:
-	//no verification for i and j is done
-	char at(uint32_t i, uint32_t j) const throw();
-	void set(uint32_t i, uint32_t j, char value = 1) throw();
-	uint32_t* row(uint32_t i) throw();
-	void copy(const Bool_Matrix& src);
-	void swap(Bool_Matrix& src) throw();
-
-	void init(uint32_t m, uint32_t n);
-	
+	ui32 find_next(ui32 i) const throw();
+	ui32 popcount() const throw();
 	void copy_and_transpose(const Bool_Matrix& src);
-	
-	void clear() throw();
+	//taking and changing elements
+	char at(ui32 i, ui32 j) const throw();
+	char at(ui32 j) const throw();//when m_==1
+	void set(ui32 i, ui32 j) throw();
+	void set(ui32 j) throw();//when m_==1
+	void reset(ui32 i, ui32 j) throw();
+	void reset(ui32 j) throw();//when m_==1
+	ui32* row(ui32 i) throw();
+	const ui32* row(ui32 i) const throw();
+	//stats
+	inline ui32 size32() const { return sz32_; }
+	inline ui32 width() const { return n_; }
+	inline ui32 height() const { return m_;	}
 	//reading data
-	void read(const std::vector<char>& data, uint32_t m, uint32_t n);
-	void read(FILE* pFile);	
+	void read(const std::vector<char>& data, ui32 m, ui32 n);
+	void read(FILE* pFile, ui32 size = 2048);	
 	void read(const std::string& file_name);
 	void read(const char* file_name);
 	//printing data
 	void print(const std::string& file_name, const char* mode = "w") const;
 	void print(FILE* pFile) const;
+	//copy, swap
+	void copy(const Bool_Matrix& src);
+	void swap(Bool_Matrix& src) throw();
 	//generate random matrix with P(a[i,j]=1)=d
-	void random(uint32_t m, uint32_t n, float d = 0.5, unsigned seed = 0);
-	inline uint32_t size32() const {return sz32_;}
-	inline uint32_t width() const {return n_;}
-	inline uint32_t height() const {return m_;}
-
-	Bool_Matrix(uint32_t m, uint32_t n);
-	Bool_Matrix(uint32_t n);
-	Bool_Matrix();
+	void random(ui32 m, ui32 n, float d = 0.5, unsigned seed = 0);
+	//constructing
+	void init(ui32 m, ui32 n, char value = 0);//value should be either 0 or 0xFF
+	void clear() throw();
+	Bool_Matrix(ui32 m, ui32 n);
+	Bool_Matrix(ui32 n);
+	Bool_Matrix(const Bool_Matrix& src);
+	Bool_Matrix(const Bool_Matrix& src, const Bool_Matrix& rows);
+	Bool_Matrix& operator=(const Bool_Matrix& src);
+	Bool_Matrix() throw();
 	~Bool_Matrix() throw();
 protected:
-	uint32_t* data_;  
-	uint32_t n_;//matrix width
-	uint32_t m_;//matrix hight
-	uint32_t sz32_;//size in bytes
-	uint32_t n32_;//uints32 in a row
+	ui32* data_;  
+	ui32 n_;//matrix width
+	ui32 m_;//matrix hight
+	ui32 sz32_;//size in ui32
+	ui32 n32_;//ui32 in a row
 };
