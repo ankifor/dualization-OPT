@@ -1,10 +1,5 @@
 #pragma once
 
-#include <memory.h>                              // For memcpy and memset
-#include <stdlib.h>                              // For exit in Error function
-#include <stdio.h>                               // Needed for example only
-
-
 // Class DynamicArray makes a dynamic array which can grow as new data are added
 template <typename TX>
 class DynamicArray {

@@ -41,6 +41,9 @@
 *
 ******************************************************************************/
 
+#include <memory.h>// For memcpy and memset
+//#include <stdlib.h>// For exit in Error function
+//#include <stdio.h>// Needed for example only
 #include <stdexcept>
 #include "DynamicArray.h"
 
@@ -50,7 +53,7 @@
 template <typename TX>
 DynamicArray<TX>::DynamicArray() {  
    // Constructor
-   Buffer = OldBuffer = 0;
+   Buffer = OldBuffer = nullptr;
    MaxNum = NumEntries = 0;
 }
 
@@ -78,8 +81,9 @@ void DynamicArray<TX>::Reserve(int num) {
 				}
 					 
          // num = 0. Discard data and de-allocate buffer
-         if (Buffer) delete[] Buffer;            // De-allocate buffer
-         Buffer = 0;
+         if (Buffer != nullptr) 
+					 delete[] Buffer;// De-allocate buffer
+         Buffer = nullptr;
          MaxNum = NumEntries = 0;
          return;
       }
@@ -101,15 +105,16 @@ void DynamicArray<TX>::ReAllocate(int num) {
    // Note: ReAllocate leaves OldBuffer to be deleted by the calling function,
    // just to cover the case where an object being copied into the new buffer
    // happens to be contained in the old buffer.
-   if (OldBuffer) delete[] OldBuffer;            // Should not occur in single-threaded applications
+   if (OldBuffer != nullptr) 
+		 delete[] OldBuffer;// Should not occur in single-threaded applications
 
-   TX * Buffer2 = 0;                             // New buffer
-   Buffer2 = new TX[num];                        // Allocate new buffer
-   if (Buffer2 == 0) {
+   TX * Buffer2 = nullptr;// New buffer
+   Buffer2 = new TX[num];// Allocate new buffer
+   if (Buffer2 == nullptr) {
 		 //Error(3,num); return;
 		 throw std::runtime_error("DynamicArray::ReAllocate::Memory allocation failed");
-	 }     // Error can't allocate
-   if (Buffer) {
+	 }// Error can't allocate
+   if (Buffer != nullptr) {
       // A smaller buffer is previously allocated
       memcpy(Buffer2, Buffer, MaxNum*sizeof(TX));// Copy contents of old buffer into new one
    }
@@ -157,10 +162,11 @@ int DynamicArray<TX>::Push(const TX & obj) {
       ReAllocate(NewSize);
    }
    Buffer[NumEntries] = obj;                     // Insert at top
-   if (OldBuffer) {
+   if (OldBuffer != nullptr) {
       // Old buffer can only be deleted after copying object, 
       // because obj might be contained in old buffer
-      delete[] OldBuffer;  OldBuffer = 0;
+      delete[] OldBuffer;  
+			OldBuffer = nullptr;
    }
    return NumEntries++;                          // Increment NumEntries and return current index
 }
@@ -199,6 +205,16 @@ TX& DynamicArray<TX>::Top() {
 	return Buffer[NumEntries];
 }
 
+template <typename TX>
+TX & DynamicArray<TX>::operator[] (int i) {
+	// Access object with index i
+	if ((unsigned int)i >= (unsigned int)NumEntries) {
+		// Index i does not exist
+		//Error(1, i);  i = 0;
+		throw std::runtime_error("DynamicArray::operator[]::Index out of range");
+	}
+	return Buffer[i];
+}
 
 // Produce fatal error message. Used internally.
 // Note: If your program has a graphical user interface (GUI) then you
