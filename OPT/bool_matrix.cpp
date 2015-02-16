@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <memory.h>
 #include <vector>
+#include <string>
 #include <stdexcept>
 #include <intrin.h>
 #include "bool_matrix.h"
@@ -165,7 +166,7 @@ static void read_into_vector(FILE* p_file, vector<char>& buffer, ui32& m, ui32& 
 	if (buffer.size() != n*m)
 		state = 10;
 	if (state == 10)
-		throw std::runtime_error("Invalid file format");
+		throw std::runtime_error("read_into_vector::Invalid file format");
 }
 
 void Bool_Matrix::init(ui32 m, ui32 n, char value) {
@@ -177,15 +178,15 @@ void Bool_Matrix::init(ui32 m, ui32 n, char value) {
 	if (data_ == nullptr) {
 		data_ = static_cast<ui32*>(malloc(sz32_*SIZE));
 	} else if (sz32_ >= sz32_old) {
-		data_ = static_cast<ui32*>(realloc(data_, sz32_*SIZE));
+		data_ = static_cast<ui32*>(realloc(data_, sz32_*SIZE)); //-V701
 	}
 	if (data_ == nullptr)
-		throw std::runtime_error("Allocation memory error");
+		throw std::runtime_error("Bool_Matrix::init::Allocation memory error");
 	memset(data_, value, sz32_*SIZE);
 }
 
 void Bool_Matrix::clear() {
-	if (data_ == nullptr) {
+	if (data_ != nullptr) {
 		free(data_);
 		data_ = nullptr;
 	}
@@ -198,7 +199,7 @@ void Bool_Matrix::clear() {
 void Bool_Matrix::read(const string& file_name) {
 	FILE* p_file = fopen(file_name.c_str(),"r");
 	if (p_file == nullptr) {
-		throw std::runtime_error(std::strerror(errno));
+		throw std::runtime_error(string("Bool_Matrix::read::")+std::strerror(errno));
 	}
 	read(p_file);
 	fclose(p_file);
@@ -207,7 +208,7 @@ void Bool_Matrix::read(const string& file_name) {
 void Bool_Matrix::read(const char* file_name) {
 	FILE* p_file = fopen(file_name,"r");
 	if (p_file == nullptr) {
-		throw std::runtime_error(std::strerror(errno));
+		throw std::runtime_error(string("Bool_Matrix::read::")+std::strerror(errno));
 	}
 	read(p_file);
 	fclose(p_file);
@@ -216,7 +217,7 @@ void Bool_Matrix::read(const char* file_name) {
 void Bool_Matrix::print(const string& file_name, const char* mode) const {
 	FILE* p_file = fopen(file_name.c_str(), mode);
 	if (p_file == nullptr) {
-		throw std::runtime_error(std::strerror(errno));
+		throw std::runtime_error(string("Bool_Matrix::print::") + std::strerror(errno));
 	}
 	print(p_file);
 	fclose(p_file);

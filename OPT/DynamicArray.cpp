@@ -30,11 +30,6 @@
 * subsequent addition of another object by Push() causes the memory to be 
 * re-allocated.
 *
-* Attempts to read an object with an invalid index will cause an error 
-* message to the standard error output. You may change the 
-* DynamicArray::Error function to produce a message box if the program 
-* has a graphical user interface.
-*
 * It is possible, but not necessary, to allocate a certain amount of 
 * memory before adding any objects. This can reduce the risk of having
 * to re-allocate memory if the first allocated memory block turns out
@@ -44,13 +39,11 @@
 * At the end of this file you will find a working example of how to use 
 * DynamicArray.
 *
-* The first part of this file containing declarations may be placed in a 
-* header file. The second part containing examples should be removed from your
-* final application.
-*
 ******************************************************************************/
 
+#include <stdexcept>
 #include "DynamicArray.h"
+
 
 
 // Members of class DynamicArray
@@ -79,7 +72,11 @@ void DynamicArray<TX>::Reserve(int num) {
    // Setting num = 0 will discard all data and de-allocate the buffer.
    if (num <= MaxNum) {
       if (num <= 0) {
-         if (num < 0) Error(1, num);
+				if (num < 0) {
+					//Error(1, num);
+					throw std::runtime_error("DynamicArray::Reserve::Index out of range");
+				}
+					 
          // num = 0. Discard data and de-allocate buffer
          if (Buffer) delete[] Buffer;            // De-allocate buffer
          Buffer = 0;
@@ -108,7 +105,10 @@ void DynamicArray<TX>::ReAllocate(int num) {
 
    TX * Buffer2 = 0;                             // New buffer
    Buffer2 = new TX[num];                        // Allocate new buffer
-   if (Buffer2 == 0) {Error(3,num); return;}     // Error can't allocate
+   if (Buffer2 == 0) {
+		 //Error(3,num); return;
+		 throw std::runtime_error("DynamicArray::ReAllocate::Memory allocation failed");
+	 }     // Error can't allocate
    if (Buffer) {
       // A smaller buffer is previously allocated
       memcpy(Buffer2, Buffer, MaxNum*sizeof(TX));// Copy contents of old buffer into new one
@@ -130,7 +130,8 @@ void DynamicArray<TX>::SetNum(int num) {
    // Setting num = 0 will erase all objects, but not de-allocate the buffer.
 
    if (num < 0) { // Cannot be negative
-      Error(1, num); return;
+      //Error(1, num); return;
+		 throw std::runtime_error("DynamicArray::SetNum::Index out of range");
    }
    if (num > MaxNum) {
       // Allocate larger buffer. 
@@ -170,7 +171,8 @@ void DynamicArray<TX>::Pop() {
    // Remove last object and return it
    if (NumEntries <= 0) {
       // buffer is empty. Make error message
-      Error(2, 0);
+      //Error(2, 0);
+		  throw std::runtime_error("DynamicArray::Pop::Array is empty");
       // Return empty object
       TX temp;
       memset(&temp, 0, sizeof(temp));
@@ -186,7 +188,8 @@ TX& DynamicArray<TX>::Top() {
 	// Remove last object and return it
 	if (NumEntries <= 0) {
 		// buffer is empty. Make error message
-		Error(2, 0);
+		//Error(2, 0);
+		throw std::runtime_error("DynamicArray::Top::Array is empty");
 		// Return empty object
 		TX temp;
 		memset(&temp, 0, sizeof(temp));
@@ -200,24 +203,24 @@ TX& DynamicArray<TX>::Top() {
 // Produce fatal error message. Used internally.
 // Note: If your program has a graphical user interface (GUI) then you
 // must rewrite this function to produce a message box with the error message.
-template <typename TX>
-void DynamicArray<TX>::Error(int e, int n) {
-   // Define error texts
-   static const char * ErrorTexts[] = {
-      "Unknown error",                 // 0
-      "Index out of range",            // 1
-      "Array is empty",                // 2
-      "Memory allocation failed"       // 3
-   };
-   // Number of texts in ErrorTexts
-   const unsigned int NumErrorTexts = sizeof(ErrorTexts) / sizeof(*ErrorTexts);
-
-   // check that index is within range
-   if ((unsigned int)e >= NumErrorTexts) e = 0;
-
-   // Replace this with your own error routine, possibly with a message box:
-   fprintf(stderr, "\nDynamicArray error: %s (%i)\n", ErrorTexts[e], n);
-
-   // Terminate execution
-   exit(1);
-}
+//template <typename TX>
+//void DynamicArray<TX>::Error(int e, int n) {
+//   // Define error texts
+//   static const char * ErrorTexts[] = {
+//      "Unknown error",                 // 0
+//      "Index out of range",            // 1
+//      "Array is empty",                // 2
+//      "Memory allocation failed"       // 3
+//   };
+//   // Number of texts in ErrorTexts
+//   const unsigned int NumErrorTexts = sizeof(ErrorTexts) / sizeof(*ErrorTexts);
+//
+//   // check that index is within range
+//   if ((unsigned int)e >= NumErrorTexts) e = 0;
+//
+//   // Replace this with your own error routine, possibly with a message box:
+//   fprintf(stderr, "\nDynamicArray error: %s (%i)\n", ErrorTexts[e], n);
+//	 
+//   // Terminate execution
+//   exit(1);
+//}
