@@ -1,9 +1,7 @@
 #pragma once
 
-#include <string>
 #include "DynamicArray.h"
 #include "my_int.h"
-
 
 //matrix elements are stored by rows
 class Bool_Matrix {
@@ -27,7 +25,6 @@ public:
 	//reading data
 	void read(const DynamicArray<char>& data, ui32 m, ui32 n);
 	void read(FILE* pFile);	
-	void read(const std::string& file_name);
 	void read(const char* file_name);
 	//printing data
 	void print(const std::string& file_name, const char* mode = "w") const;

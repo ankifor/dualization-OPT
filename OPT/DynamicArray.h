@@ -1,7 +1,7 @@
 #pragma once
 
-#include <memory.h>// For memcpy and memset
-#include <stdexcept>// For std::runtime_error
+#include <memory.h>//for memcpy and memset
+#include <stdexcept>//for std::runtime_error
 
 // Class DynamicArray makes a dynamic array which can grow as new data are added
 template <typename TX>

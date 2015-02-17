@@ -1,9 +1,9 @@
-#include <time.h>
-#include <cstdio>
-#include <cstdlib>
-#include <memory.h>
-#include <stdexcept>
-#include <intrin.h>
+#include <time.h>//for time()
+#include <cstdio>//for fgetc, EOF, fopen, fclose, fputc
+#include <cstdlib>//for rand
+#include <memory.h>//for memset, memcpy
+#include <stdexcept>//for std::runtime_error
+#include <intrin.h>//for _tzcnt_u32, __popcnt, _bittest, _bittestandset, _bittestandreset
 #include "bool_matrix.h"
 
 
@@ -187,16 +187,6 @@ void Bool_Matrix::clear() {
 	m_ = 0;
 	n_ = 0;
 	sz32_ = 0;
-}
-
-
-void Bool_Matrix::read(const string& file_name) {
-	FILE* p_file = fopen(file_name.c_str(),"r");
-	if (p_file == nullptr) {
-		throw std::runtime_error(string("Bool_Matrix::read::")+std::strerror(errno));
-	}
-	read(p_file);
-	fclose(p_file);
 }
 
 void Bool_Matrix::read(const char* file_name) {
