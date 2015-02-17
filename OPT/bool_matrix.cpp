@@ -103,7 +103,6 @@ void Bool_Matrix::swap(Bool_Matrix& src) {
 	}
 }
 
-
 static void read_get_width_and_check(FILE* p_file, ui32& m, ui32& n) {
 	char ch = 0;
 	char state = 0;
@@ -131,56 +130,21 @@ static void read_get_width_and_check(FILE* p_file, ui32& m, ui32& n) {
 			}
 			break;
 		case 1:
-			if (ch == ' ') {
-				state = 2;
-			} else if (ch == '\n') {
+			if (ch == '0' || ch == '1') {
+				++n;
+			} else if(ch == ' ') {
+				// skip
+			} else if (ch == '\n' || ch == EOF) {
 				if (m == 0 || n == n0) {
 					n0 = n;
 					n = 0;
 					++m;
 					state = 0;
 				} else {
-					state = 10;
-				}
-			} else if (ch == EOF) {
-				if (m == 0 || n == n0) {
-					n0 = n;
-					n = 0;
-					++m;
-					state = 11;
-				} else {					
 					state = 10;
 				}
 			} else {
 				state = 10;
-			}
-			break;
-		case 2:
-			if (ch == '0' || ch == '1') {
-				++n;
-				state = 1;
-			} else if (ch == ' ') {
-				state = 2;//skip
-			} else if (ch == '\n') {
-				if (m == 0 || n == n0) {
-					n0 = n;
-					n = 0;
-					++m;
-					state = 0;
-				} else {
-					state = 10;
-				}
-			} else if (ch == EOF) {
-				if (m == 0 || n == n0) {
-					n0 = n;
-					n = 0;
-					++m;
-					state = 11;
-				} else {
-					state = 10;
-				}
-			} else {
-				state = 10;//error
 			}
 			break;
 		default:
@@ -317,8 +281,6 @@ void Bool_Matrix::copy_and_transpose(const Bool_Matrix& src) {
 		}
 	}
 }
-
-
 
 Bool_Matrix::Bool_Matrix(ui32 m, ui32 n) : data_(nullptr), n_(0), m_(0), sz32_(0), n32_(0) {
 	init(m, n);
