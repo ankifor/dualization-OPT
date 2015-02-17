@@ -7,12 +7,17 @@ using namespace std;
 
 
 void main() {
-	ui32 m = 1;
-	ui32 n = 260;
+	ui32 m = 5;
+	ui32 n = 10;
 	Bool_Matrix L;
 
 	try {
-		L.random(m, n, 0.01f);
+		//L.random(m, n, 0.5f);
+		//L.print(stdout);
+		//cout << endl;
+		//L.print("mat1.txt");
+		L.read("mat1.txt");
+		//L.print("mat1.txt");
 		L.print(stdout);
 		cout << endl;
 

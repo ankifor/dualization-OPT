@@ -55,6 +55,7 @@ void Bool_Matrix::set(ui32 i, ui32 j) {
 	//data_[ind] = (data_[ind] & ~POW2(j & MASK)) | (1 << (j & MASK));
 	//data_[ind] |= (value << (j & 0x7)); 
 }
+
 void Bool_Matrix::set(ui32 j) {
 	ui32 ind = (j >> LOG2BIT);
 	_bittestandset(reinterpret_cast<long*>(data_ + ind), j & MASK);
@@ -102,65 +103,96 @@ void Bool_Matrix::swap(Bool_Matrix& src) {
 	}
 }
 
-static void read_into_vector(FILE* p_file, DynamicArray<char>& buffer, ui32& m, ui32& n) {
+
+static void read_get_width_and_check(FILE* p_file, ui32& m, ui32& n) {
 	char ch = 0;
 	char state = 0;
-	n = 0;
-	m = 0;
+	ui32 n0 = 0;
+	fpos_t pos = 0;
+	if (fgetpos(p_file, &pos) != 0)
+		throw std::runtime_error(string("read_get_width::") + std::strerror(errno));
+	
 	while (state<10) {
 		ch = static_cast<char>(fgetc(p_file));
+		if (ferror(p_file)) 
+			throw std::runtime_error(string("read_get_width::") + std::strerror(errno));
+		
 		switch (state) {
-			case 0:
-				if (ch == '0' || ch == '1') {
-					buffer.Push(ch - '0');
-					if (m == 0) 
-						n++;
-					state = 1;
-				} else if (ch == ' ') {
-					state = 0;//skip
-				} else if (ch == EOF || ch == '\n') {
-					state = 11;
-				} else {
-					state = 10;//error
-				}
-				break;
-			case 1:
-				if (ch == ' ') {
-					state = 2;
-				} else if (ch == '\n') {
-					m++;
+		case 0:
+			if (ch == '0' || ch == '1') {
+				++n;
+				state = 1;
+			} else if (ch == ' ') {
+				state = 0;//skip
+			} else if (ch == EOF || ch == '\n') {
+				state = 11;
+			} else {
+				state = 10;//error
+			}
+			break;
+		case 1:
+			if (ch == ' ') {
+				state = 2;
+			} else if (ch == '\n') {
+				if (m == 0 || n == n0) {
+					n0 = n;
+					n = 0;
+					++m;
 					state = 0;
 				} else {
 					state = 10;
 				}
-				break;
-			case 2:
-				if (ch == '0' || ch == '1') {
-					buffer.Push(ch - '0');
-					if (m == 0) 
-						n++;
-					state = 1;
-				} else if (ch == ' ') {
-					state = 2;//skip
-				} else if (ch == '\n') {
-					m++;
+			} else if (ch == EOF) {
+				if (m == 0 || n == n0) {
+					n0 = n;
+					n = 0;
+					++m;
+					state = 11;
+				} else {					
+					state = 10;
+				}
+			} else {
+				state = 10;
+			}
+			break;
+		case 2:
+			if (ch == '0' || ch == '1') {
+				++n;
+				state = 1;
+			} else if (ch == ' ') {
+				state = 2;//skip
+			} else if (ch == '\n') {
+				if (m == 0 || n == n0) {
+					n0 = n;
+					n = 0;
+					++m;
 					state = 0;
-				} else if (ch == EOF) {
-					m++;
+				} else {
+					state = 10;
+				}
+			} else if (ch == EOF) {
+				if (m == 0 || n == n0) {
+					n0 = n;
+					n = 0;
+					++m;
 					state = 11;
 				} else {
-					state = 10;//error
+					state = 10;
 				}
-				break;
-			default:
-				state = 10;
-				break;
+			} else {
+				state = 10;//error
+			}
+			break;
+		default:
+			state = 10;
+			break;
 		}//switch
 	}//while
-	if (static_cast<ui32>(buffer.GetNum()) != n*m)
-		state = 10;
+	n = n0;
 	if (state == 10)
-		throw std::runtime_error("read_into_vector::Invalid file format");
+		throw std::runtime_error("read_get_width::Invalid file format");
+	if (fsetpos(p_file, &pos) != 0)
+		throw std::runtime_error(string("read_get_width::") + std::strerror(errno));	
 }
 
 void Bool_Matrix::init(ui32 m, ui32 n, char value) {
@@ -194,16 +226,26 @@ void Bool_Matrix::read(const char* file_name) {
 	if (p_file == nullptr) {
 		throw std::runtime_error(string("Bool_Matrix::read::")+std::strerror(errno));
 	}
-	read(p_file);
+	try {
+		read(p_file);
+	} catch (...) {
+		fclose(p_file);
+		throw;
+	}
 	fclose(p_file);
 }
 
-void Bool_Matrix::print(const string& file_name, const char* mode) const {
-	FILE* p_file = fopen(file_name.c_str(), mode);
+void Bool_Matrix::print(const char* file_name, const char* mode) const {
+	FILE* p_file = fopen(file_name, mode);
 	if (p_file == nullptr) {
 		throw std::runtime_error(string("Bool_Matrix::print::") + std::strerror(errno));
 	}
-	print(p_file);
+	try {
+		print(p_file);
+	} catch (...) {
+		fclose(p_file);
+		throw;
+	}
 	fclose(p_file);
 }
 
@@ -215,6 +257,8 @@ void Bool_Matrix::print(FILE* p_file) const {
 		}
 		fputc('\n', p_file);
 	}
+	if (ferror(p_file))
+		throw std::runtime_error(string("Bool_Matrix::print::") + std::strerror(errno));
 }
 
 void Bool_Matrix::random(ui32 m, ui32 n, float d, unsigned seed) {
@@ -231,13 +275,27 @@ void Bool_Matrix::random(ui32 m, ui32 n, float d, unsigned seed) {
 	}
 }
 
+static char skip_space(FILE* p_file) {
+	char ch = ' ';
+	while (ch == ' ' || ch == '\n') {
+		ch = static_cast<char>(fgetc(p_file));
+	}
+	return ch;
+}
+
 void Bool_Matrix::read(FILE* p_file) {
-	DynamicArray<char> buffer;
-	buffer.Reserve(2048);
 	ui32 m = 0;
 	ui32 n = 0;
-	read_into_vector(p_file, buffer, m, n);
-	read(buffer, m, n);
+	read_get_width_and_check(p_file, m, n);
+	init(m, n);
+
+	for (ui32 i = 0; i < m_; ++i) {
+		for (ui32 j = 0; j < n_; ++j) {
+			if (skip_space(p_file) == '1')
+				set(i, j);
+		}
+	}
+
 }
 
 void Bool_Matrix::read(const DynamicArray<char>& data, ui32 m, ui32 n) {

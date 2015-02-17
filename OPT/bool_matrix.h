@@ -27,7 +27,7 @@ public:
 	void read(FILE* pFile);	
 	void read(const char* file_name);
 	//printing data
-	void print(const std::string& file_name, const char* mode = "w") const;
+	void print(const char* file_name, const char* mode = "w") const;
 	void print(FILE* pFile) const;
 	//copy, swap
 	void copy(const Bool_Matrix& src);
