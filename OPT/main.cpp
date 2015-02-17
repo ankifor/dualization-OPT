@@ -1,6 +1,6 @@
-#include "my_int.h"
 #include <stdexcept>
 #include <iostream>
+#include "my_int.h"
 #include "bool_matrix.h"
 
 using namespace std;
@@ -10,8 +10,9 @@ void main() {
 	ui32 m = 1;
 	ui32 n = 260;
 	Bool_Matrix L;
+
 	try {
-		L.random(m, n,0.01);
+		L.random(m, n, 0.01f);
 		L.print(stdout);
 		cout << endl;
 
@@ -20,12 +21,10 @@ void main() {
 		}
 		cout << endl;
 		cout << L.popcount() << endl;
+		cout << endl;
 	} catch (runtime_error& rte) {
 		cout << rte.what() << endl;
 	} catch (...) {
 		cout << "Unknown error" << endl;
 	}
-	//L.random(m, n);
-	//L.print("mat.txt", "w");
-
 }

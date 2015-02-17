@@ -1,6 +1,7 @@
 #pragma once
-#include <vector>
+
 #include <string>
+#include "DynamicArray.h"
 #include "my_int.h"
 
 
@@ -20,12 +21,12 @@ public:
 	ui32* row(ui32 i) throw();
 	const ui32* row(ui32 i) const throw();
 	//stats
-	inline ui32 size32() const { return sz32_; }
-	inline ui32 width() const { return n_; }
-	inline ui32 height() const { return m_;	}
+	ui32 size32() const { return sz32_; }
+	ui32 width() const { return n_; }
+	ui32 height() const { return m_;	}
 	//reading data
-	void read(const std::vector<char>& data, ui32 m, ui32 n);
-	void read(FILE* pFile, ui32 size = 2048);	
+	void read(const DynamicArray<char>& data, ui32 m, ui32 n);
+	void read(FILE* pFile);	
 	void read(const std::string& file_name);
 	void read(const char* file_name);
 	//printing data

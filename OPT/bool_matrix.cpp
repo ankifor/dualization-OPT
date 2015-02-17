@@ -2,21 +2,15 @@
 #include <cstdio>
 #include <cstdlib>
 #include <memory.h>
-#include <vector>
-#include <string>
 #include <stdexcept>
 #include <intrin.h>
 #include "bool_matrix.h"
 
-using namespace std;
 
-static const ui32 POW2(ui32 x) {
-	return 1 << x;
-}
+using namespace std;
 
 ui32 Bool_Matrix::find_next(ui32 j) const {
 	ui32 ind = j >> LOG2BIT;
-	//ui32 max_ind =  (n_ + BITS - 1) >> LOG2BIT;
 	ui32 offset = j & MASK;
 	ui32 buf = (data_[ind] >> offset) << offset;
 
@@ -108,17 +102,17 @@ void Bool_Matrix::swap(Bool_Matrix& src) {
 	}
 }
 
-static void read_into_vector(FILE* p_file, vector<char>& buffer, ui32& m, ui32& n) {
+static void read_into_vector(FILE* p_file, DynamicArray<char>& buffer, ui32& m, ui32& n) {
 	char ch = 0;
 	char state = 0;
 	n = 0;
 	m = 0;
 	while (state<10) {
-		ch = fgetc(p_file);
+		ch = static_cast<char>(fgetc(p_file));
 		switch (state) {
 			case 0:
 				if (ch == '0' || ch == '1') {
-					buffer.push_back(ch - '0');
+					buffer.Push(ch - '0');
 					if (m == 0) 
 						n++;
 					state = 1;
@@ -142,7 +136,7 @@ static void read_into_vector(FILE* p_file, vector<char>& buffer, ui32& m, ui32& 
 				break;
 			case 2:
 				if (ch == '0' || ch == '1') {
-					buffer.push_back(ch - '0');
+					buffer.Push(ch - '0');
 					if (m == 0) 
 						n++;
 					state = 1;
@@ -163,7 +157,7 @@ static void read_into_vector(FILE* p_file, vector<char>& buffer, ui32& m, ui32& 
 				break;
 		}//switch
 	}//while
-	if (buffer.size() != n*m)
+	if (static_cast<ui32>(buffer.GetNum()) != n*m)
 		state = 10;
 	if (state == 10)
 		throw std::runtime_error("read_into_vector::Invalid file format");
@@ -236,7 +230,6 @@ void Bool_Matrix::print(FILE* p_file) const {
 void Bool_Matrix::random(ui32 m, ui32 n, float d, unsigned seed) {
 	init(m,n);
 	ui32 threshold = ui32(RAND_MAX * d);
-	char tmp = 0;
 	if (seed == 0)
 		seed = static_cast<unsigned>(time(nullptr));
 	srand(seed);	
@@ -248,18 +241,17 @@ void Bool_Matrix::random(ui32 m, ui32 n, float d, unsigned seed) {
 	}
 }
 
-void Bool_Matrix::read(FILE* p_file, ui32 size) {
-	vector<char> buffer;
-	buffer.reserve(size);
+void Bool_Matrix::read(FILE* p_file) {
+	DynamicArray<char> buffer;
+	buffer.Reserve(2048);
 	ui32 m = 0;
 	ui32 n = 0;
 	read_into_vector(p_file, buffer, m, n);
 	read(buffer, m, n);
 }
 
-void Bool_Matrix::read(const std::vector<char>& data, ui32 m, ui32 n) {
+void Bool_Matrix::read(const DynamicArray<char>& data, ui32 m, ui32 n) {
 	init(m, n);
-	char tmp = 0;
 	for (ui32 i = 0; i < m; ++i) {
 		for (ui32 j = 0; j < n; ++j) {
 			if (data[i*n + j])
@@ -270,7 +262,6 @@ void Bool_Matrix::read(const std::vector<char>& data, ui32 m, ui32 n) {
 
 void Bool_Matrix::copy_and_transpose(const Bool_Matrix& src) {
 	init(src.n_, src.m_);
-	char tmp = 0;
 	for (ui32 i = 0; i < src.m_; ++i) {
 		for (ui32 j = 0; j < src.n_; ++j) {
 			if (src.at(i, j))
