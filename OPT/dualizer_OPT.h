@@ -13,11 +13,11 @@ public:
 	void run();
 protected:
 	bool check_covering(const Bool_Vector& covered_rows) const throw();
-	void delete_ge_rows(Bool_Vector& rows, const Bool_Vector& cols) const throw();
-	void delete_covered_rows(Bool_Vector& rows, ui32 j) const throw();
+	void delete_le_rows(Bool_Vector& rows, const Bool_Vector& cols) const throw();
+	void delete_covered_rows(Bool_Vector& rows, const Bool_Vector& col_j) const throw();
 	void delete_fobidden_cols(const Bool_Vector& one_sums, 
 		Bool_Vector& cols, const Bool_Vector& cov) const throw();
-	void delete_zero_cols(const Bool_Vector& rows, Bool_Vector& cols) const throw();
+	void delete_zero_cols(const Bool_Vector& rows, Bool_Vector& cols, const Bool_Vector& mask) const throw();
 	void init_masks();
 	
 protected:

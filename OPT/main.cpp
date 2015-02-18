@@ -4,33 +4,33 @@
 #include "bool_vector.h"
 #include "bool_matrix.h"
 
-using namespace std;
 
+using namespace std;
 
 void main() {
 	ui32 m = 1;
-	ui32 n = 34;
+	ui32 n = 35;
 	Bool_Matrix L;
 	Bool_Vector a;
+	Bool_Vector mask;
 	try {
-		L.random(m, n, 0.5f);
-		//L.print(stdout);
-		//cout << endl;
+		L.read("mat1.txt");
+		//L.random(m, n, 0.5f);
+		L.print(stdout);
+		cout << endl;
 		//L.print("mat1.txt");
 		//L.read("mat1.txt");
 		//L.print("mat1.txt");
+
+		a.resetupto(0);
+		Bool_Vector b(L.row(0));
 		
-		a.assign(L.row(0), L.width());
-		Bool_Vector b(a.bitsize()+32);
-		b.copy(a);
-		L.print(stdout);
-		cout << endl;
-		for (ui32 j = b.find_next(0); j < b.bitsize(); j = b.find_next(j + 1)) {
+		for (ui32 j = b.find_next(0); j < b.size()*32; j = b.find_next(j + 1)) {
 			cout << j << ' ';
 		}
-		cout << endl;
-		cout << b.popcount() << endl;
-		cout << endl;
+		//cout << endl;
+		//cout << b.popcount() << endl;
+		//cout << endl;
 
 	} catch (runtime_error& rte) {
 		cout << rte.what() << endl;

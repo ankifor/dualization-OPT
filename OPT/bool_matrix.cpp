@@ -16,26 +16,26 @@ taking and changing elements
 **********************************************************/
 
 char Bool_Matrix::at(ui32 i, ui32 j) const {
-	ui32 ind = i*row_size() + (j >> LOG2BIT);
-	return _bittest(reinterpret_cast<const long*>(data_+ind), j & MASK);
+	ui32 ind = i*row_size() + (j >> UI32_LOG2BIT);
+	return _bittest(reinterpret_cast<const long*>(data_+ind), j & UI32_MASK);
 }
 
 void Bool_Matrix::set(ui32 i, ui32 j) {
-	ui32 ind = i*row_size() + (j >> LOG2BIT);
-	_bittestandset(reinterpret_cast<long*>(data_ + ind), j & MASK);
+	ui32 ind = i*row_size() + (j >> UI32_LOG2BIT);
+	_bittestandset(reinterpret_cast<long*>(data_ + ind), j & UI32_MASK);
 }
 
 void Bool_Matrix::reset(ui32 i, ui32 j) {
-	ui32 ind = i*row_size() + (j >> LOG2BIT);
-	_bittestandreset(reinterpret_cast<long*>(data_ + ind), j & MASK);
+	ui32 ind = i*row_size() + (j >> UI32_LOG2BIT);
+	_bittestandreset(reinterpret_cast<long*>(data_ + ind), j & UI32_MASK);
 }
 
-ui32* Bool_Matrix::row(ui32 i) {
-	return &data_[i*row_size()];
+Bool_Vector Bool_Matrix::row(ui32 i) {
+	return Bool_Vector(&data_[i*row_size()], width());
 }
 
-const ui32* Bool_Matrix::row(ui32 i) const {
-	return &data_[i*row_size()];
+const Bool_Vector Bool_Matrix::row(ui32 i) const {
+	return Bool_Vector(&data_[i*row_size()], width());
 }
 
 /**********************************************************
@@ -45,7 +45,7 @@ service functions
 void Bool_Matrix::copy(const Bool_Matrix& src) {
 	if (this != &src) {
 		reserve(src.m_, src.n_);
-		memcpy(data_, src.data_, m_*row_size()*SIZE);
+		memcpy(data_, src.data_, m_*row_size()*UI32_SIZE);
 	}
 }
 
@@ -80,7 +80,7 @@ void Bool_Matrix::reserve(ui32 m, ui32 n) {
 		if (capacity_ < sz) {//reallocation
 			if (capacity_ > 0 && data_ != nullptr)
 				free(data_);
-			data_ = static_cast<ui32*>(malloc(sz*SIZE));
+			data_ = static_cast<ui32*>(malloc(sz*UI32_SIZE));
 			capacity_ = sz;
 			if (data_ == nullptr)
 				throw std::runtime_error("Bool_Matrix::reserve::Memory allocation problem");
@@ -92,6 +92,7 @@ void Bool_Matrix::reserve(ui32 m, ui32 n) {
 
 void Bool_Matrix::random(ui32 m, ui32 n, float d, unsigned seed) {
 	reserve(m,n);
+	memset(data_, 0, m*row_size()*UI32_SIZE);
 	ui32 threshold = ui32(RAND_MAX * d);
 	if (seed == 0)
 		seed = static_cast<unsigned>(time(nullptr));
@@ -111,7 +112,7 @@ constructors
 Bool_Matrix::Bool_Matrix(const Bool_Matrix& src, const Bool_Vector& rows) : data_(nullptr), n_(0), m_(0) {
 	reserve(rows.popcount(), src.n_);
 	for (ui32 j = rows.find_next(0), k = 0; j < rows.size(); j = rows.find_next(j + 1), ++k) {
-		memcpy(row(k), src.row(j), row_size()*SIZE);
+		memcpy(&data_[k*row_size()], &src.data_[j*row_size()], row_size()*UI32_SIZE);
 	}
 }
 
@@ -188,7 +189,7 @@ void Bool_Matrix::read(FILE* p_file) {
 	ui32 n = 0;
 	read_get_width_and_check(p_file, m, n);
 	reserve(m, n);
-
+	memset(data_, 0, m*row_size()*UI32_SIZE);
 	for (ui32 i = 0; i < m_; ++i) {
 		for (ui32 j = 0; j < n_; ++j) {
 			if (skip_space(p_file) == '1')

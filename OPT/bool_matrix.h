@@ -13,8 +13,8 @@ public:
 	void set(ui32 j) throw();//when m_==1
 	void reset(ui32 i, ui32 j) throw();
 	void reset(ui32 j) throw();//when m_==1
-	ui32* row(ui32 i) throw();
-	const ui32* row(ui32 i) const throw();
+	Bool_Vector row(ui32 i) throw();
+	const Bool_Vector row(ui32 i) const throw();
 
 	//stats
 	ui32 row_size() const { return size_from_bitsize(n_); }
@@ -43,7 +43,7 @@ public:
 
 protected:
 	void reserve(ui32 m, ui32 n);
-	static ui32 size_from_bitsize(ui32 bitsz) throw() { return (bitsz + BITS - 1) >> LOG2BIT; }
+	static ui32 size_from_bitsize(ui32 bitsz) throw() { return (bitsz + UI32_BITS - 1) >> UI32_LOG2BIT; }
 protected:
 	ui32* data_;  
 	ui32 n_;//matrix width
