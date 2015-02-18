@@ -14,6 +14,7 @@ public:
 	void setall() throw();
 	void resetall() throw();
 	void resetupto(ui32 bit) throw();
+	void reset_irrelevant_bits() throw();
 	ui32& operator[] (ui32 ind) throw() { return data_[ind]; }
 	const ui32& operator[] (ui32 ind) const throw() { return data_[ind]; }
 

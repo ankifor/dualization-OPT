@@ -104,25 +104,24 @@ void Dualizer_OPT::delete_le_rows(Bool_Vector& rows, const Bool_Vector& cols) co
 	}
 }
 
-
 void Dualizer_OPT::delete_covered_rows(Bool_Vector& rows, const Bool_Vector& col_j) const {
 	for (ui32 ind = 0; ind < rows.size(); ++ind) {
 		rows[ind] = rows[ind] & ~col_j[ind];
 	}
 }
 
-void Dualizer_OPT::delete_zero_cols(const Bool_Vector& rows, Bool_Vector& cols, const Bool_Vector& mask) const {
-	for (ui32 j = cols.find_next(0); j < cols.bitsize(); j = cols.find_next(j + 1)) {
-		if (!any(L_t.row(j), mask))
-			cols.reset(j);
-	}
-}
+//void Dualizer_OPT::delete_zero_cols(const Bool_Vector& rows, Bool_Vector& cols, const Bool_Vector& mask) const {
+//	for (ui32 j = cols.find_next(0); j < cols.bitsize(); j = cols.find_next(j + 1)) {
+//		if (!any(L_t.row(j), mask))
+//			cols.reset(j);
+//	}
+//}
 
 void Dualizer_OPT::delete_fobidden_cols(const Bool_Vector& one_sums,
 	Bool_Vector& cols, const Bool_Vector& cov) const {
-	Bool_Vector buf(one_sums.bitsize());
+	//allocate memory on stack
+	Bool_Vector buf(static_cast<ui32*>(alloca(one_sums.size()*UI32_SIZE)), one_sums.bitsize());
 
-	//ui32* buf = static_cast<ui32*>(alloca(one_sums.size32()*UI32_SIZE));
 	for (ui32 u = cov.find_next(0); u < cov.bitsize(); u = cov.find_next(u + 1)) {
 		const Bool_Vector& col_u = L_t.row(u);
 

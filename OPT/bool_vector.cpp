@@ -5,6 +5,8 @@
 
 
 ui32 Bool_Vector::find_next(ui32 bit) const {
+	if (bit >= bitsize_)
+		return bitsize_;
 	ui32 ind = bit >> UI32_LOG2BIT;
 	ui32 offset = bit & UI32_MASK;
 	ui32 buf = (data_[ind] >> offset) << offset;
@@ -57,6 +59,27 @@ void Bool_Vector::resetall() {
 	memset(data_, 0, size()*UI32_SIZE);
 }
 
+void Bool_Vector::resetupto(ui32 bit) {
+	if (bit >= bitsize_)
+		bit = bitsize_;
+	ui32 k = bit >> UI32_LOG2BIT;
+	memset(data_, 0, k*UI32_SIZE);
+	ui32 offset = bit & UI32_MASK;
+	if (offset > 0) {
+		ui32 mask = UI32_ALL << offset;
+		data_[k] &= mask;
+	}
+}
+
+void Bool_Vector::reset_irrelevant_bits() {
+	ui32 offset = bitsize_ & UI32_MASK;
+	if (offset == 0)
+		return;
+	ui32 ind = size() - 1;
+	data_[ind] &= ~(UI32_ALL << offset);
+}
+
+
 void Bool_Vector::copy(const Bool_Vector& src) {
 	reserve(src.bitsize_);
 	memcpy(data_, src.data_, size()*UI32_SIZE);
@@ -71,23 +94,7 @@ void Bool_Vector::assign(ui32* data, ui32 bitsz) {
 void Bool_Vector::make_mask(ui32 bitsz) {
 	reserve(bitsz);
 	setall();
-	ui32 offset = bitsize_ & UI32_MASK;
-	if (offset == 0)
-		return;
-	ui32 ind = size() -1;
-	data_[ind] = ~(UI32_ALL << offset);
-}
-
-void Bool_Vector::resetupto(ui32 bit) throw() {
-	if (bit >= bitsize_)
-		bit = bitsize_;
-	ui32 k = bit >> UI32_LOG2BIT;
-	memset(data_, 0, k*UI32_SIZE);
-	ui32 offset = bit & UI32_MASK;
-	if (offset > 0) {
-		ui32 mask = UI32_ALL << offset;
-		data_[k] &= mask;
-	}	
+	reset_irrelevant_bits();
 }
 
 
