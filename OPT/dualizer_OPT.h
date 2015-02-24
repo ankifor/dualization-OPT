@@ -6,8 +6,8 @@
 
 class Dualizer_OPT {
 public:
-	Dualizer_OPT();
-	~Dualizer_OPT() throw();
+	Dualizer_OPT() : mask_cols_(nullptr), mask_rows_(nullptr) {}
+	~Dualizer_OPT() throw() { clear(); }
 	void init(const Bool_Matrix& L0, const char* file_name);
 	void clear() throw();
 	void run();

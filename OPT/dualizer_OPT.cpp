@@ -1,8 +1,9 @@
 #include "dualizer_OPT.h"
 
-#include <intrin.h>
-#include <ammintrin.h>
-#include <assert.h>
+//#include <intrin.h>
+//#include <ammintrin.h>
+#include <assert.h>//for assert
+#include <string> //for string(), +
 #include "DynamicArray.h"
 #include "my_int.h"
 #include "bool_matrix.h"
@@ -12,17 +13,13 @@
 
 using namespace std;
 
-
-//static const char ZERO_MEMORY[BUF_MEMORY_SIZE] = {0};
-//static const char ONES_MEMORY[BUF_MEMORY_SIZE] = {~0};
-
 class Stack {
 public:
 	struct Element {
-		Bool_Vector rows;
-		Bool_Vector cols;
-		Bool_Vector support_rows;
-		Bool_Vector covered_rows;
+		Bool_Vector rows;//m
+		Bool_Vector cols;//n
+		Bool_Vector support_rows;//m
+		Bool_Vector covered_rows;//m
 		ui32 h_last;
 		ui32 j_last;
 	};
@@ -84,12 +81,12 @@ void Dualizer_OPT::delete_covered_rows(Bool_Vector& rows, const Bool_Vector& col
 	}
 }
 
-//void Dualizer_OPT::delete_zero_cols(const Bool_Vector& rows, Bool_Vector& cols, const Bool_Vector& mask) const {
-//	for (ui32 j = cols.find_next(0); j < cols.bitsize(); j = cols.find_next(j + 1)) {
-//		if (!any(L_t.row(j), mask))
-//			cols.reset(j);
-//	}
-//}
+void Dualizer_OPT::delete_zero_cols(const Bool_Vector& rows, Bool_Vector& cols, const Bool_Vector& mask) const {
+	for (ui32 j = cols.find_next(0); j < cols.bitsize(); j = cols.find_next(j + 1)) {
+		if (!L_t.row(j).any())
+			cols.reset(j);
+	}
+}
 
 void Dualizer_OPT::delete_fobidden_cols(const Bool_Vector& one_sums,
 	Bool_Vector& cols, const Bool_Vector& cov) const
@@ -113,40 +110,16 @@ void Dualizer_OPT::delete_fobidden_cols(const Bool_Vector& one_sums,
 	}
 }
 
-/*
-
-
-
-
 void Dualizer_OPT::run() {
-	Bool_Vector rows(1, L.height(), true);
-	Bool_Vector cols(1, L.width() , true);
+	Bool_Vector rows;
+	Bool_Vector cols;
+	rows.reserve(L.height());
+	rows.setall();
+	cols.reserve(L.width());
+	cols.setall();
 
 
 
-}
-
-void Dualizer_OPT::init_masks() {
-	ui32 ind = 0;
-	mask_rows_ = static_cast<ui32*>(My_Memory::MM_malloc(L.row32()*UI32_SIZE));
-	mask_cols_ = static_cast<ui32*>(My_Memory::MM_malloc(L_t.row32()*UI32_SIZE));
-	if (mask_rows_ == nullptr || mask_cols_ == nullptr)
-		throw std::runtime_error("Dualizer_OPT::run::Allocation memory problem");
-	
-	memset(mask_rows_, -1, L.row32()*UI32_SIZE);
-	ind = L.width() & UI32_MASK;
-	//mask_rows_[L.row32() - 1] = _bzhi_u32(-1, );
-
-	memset(mask_cols_, -1, L_t.row32()*UI32_SIZE);
-	ind = L_t.width() & UI32_MASK;
-	//mask_rows_[L_t.row32() - 1] = 0;
-}
-
-Dualizer_OPT::Dualizer_OPT() : mask_cols_(nullptr), mask_rows_(nullptr) {
-}
-
-Dualizer_OPT::~Dualizer_OPT() {
-	clear();
 }
 
 void Dualizer_OPT::init(const Bool_Matrix& L0, const char* file_name) {
@@ -158,14 +131,6 @@ void Dualizer_OPT::init(const Bool_Matrix& L0, const char* file_name) {
 }
 
 void Dualizer_OPT::clear() {
-	fclose(p_file);
-	if (mask_cols_ != nullptr) {
-		free(mask_cols_);
-		mask_cols_ = nullptr;
-	}
-	if (mask_rows_ != nullptr) {
-		free(mask_rows_);
-		mask_rows_ = nullptr;
-	}
+	if (p_file != nullptr)
+		fclose(p_file);
 }
-*/

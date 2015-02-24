@@ -37,18 +37,21 @@ ui32 Bool_Vector::popcount() const {
 
 bool Bool_Vector::any() const {
 	bool res = false;
+	ui32 buf = data_[size_ - 1];
 	assert(bitsize_ > 0);
 	data_[size_ - 1] &= last_mask_;
 	res = (*data_ != 0) || (My_Memory::MM_memcmp(data_, data_ + 1, size_ - UI32_SIZE) != 0);
+	data_[size_ - 1] = buf;
 	return res;
 }
 
 bool Bool_Vector::all() const {
 	bool res = false;
+	ui32 buf = data_[size_ - 1];
 	assert(size_ > 0);
 	data_[size_ - 1] |= ~last_mask_;
 	res = (*data_ != ~0) || (My_Memory::MM_memcmp(data_, data_ + 1, size_ - UI32_SIZE) != 0);
-	data_[size_ - 1] &= last_mask_;
+	data_[size_ - 1] = buf;
 	return !res;
 }
 
