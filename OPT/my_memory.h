@@ -4,6 +4,7 @@
 #include <malloc.h>
 #include <stdexcept>
 #include <cstdio>
+#include <assert.h>
 
 class My_Memory {
 public:
@@ -13,6 +14,16 @@ public:
 			throw std::runtime_error("My_Memory::MM_malloc::Memory allocation problem");
 		malloc_size += size;
 		++malloc_times;
+		return data;
+	}
+
+	static void* MM_alloca(int size) {
+		assert(size < 200);
+		void* data = alloca(size);
+		//if (data == nullptr)
+		//	throw std::runtime_error("My_Memory::MM_malloc::Memory allocation problem");
+		alloca_size += size;
+		++alloca_times;
 		return data;
 	}
 
@@ -52,15 +63,18 @@ public:
 		printf("\tmemset: %d, %d b\n", memset_times, memset_size);
 		printf("\tmemcpy: %d, %d b\n", memcpy_times, memcpy_size);
 		printf("\tmemcmp: %d, %d b\n", memcmp_times, memcmp_size);
+		printf("\talloca: %d, %d b\n", alloca_times, alloca_size);
 	}
 
 private:
 	static int malloc_times;
+	static int alloca_times;
 	static int free_times;   
 	static int memset_times;
 	static int memcpy_times;
 	static int memcmp_times;
 	static int malloc_size;
+	static int alloca_size;
 	static int memcpy_size;
 	static int memset_size;
 	static int memcmp_size;
