@@ -10,8 +10,10 @@ int My_Memory::free_times = 0;
 int My_Memory::malloc_times = 0;
 int My_Memory::memset_times = 0;
 int My_Memory::memcpy_times = 0;
+int My_Memory::memcmp_times = 0;
 int My_Memory::malloc_size = 0;
 int My_Memory::memcpy_size = 0;
+int My_Memory::memcmp_size = 0;
 int My_Memory::memset_size = 0;
 
 
@@ -32,7 +34,7 @@ void main() {
 		//L.print("mat1.txt");
 		//L.read("mat1.txt");
 		//L.print("mat1.txt");
-		a.make_mask(n);
+		a.reserve(n);
 		a.setall();
 		for (ui32 j = a.find_next(0); j < a.bitsize(); j = a.find_next(j + 1)) {
 			cout << j << ' ';

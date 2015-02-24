@@ -1,18 +1,19 @@
 #include <stdexcept>//for runtime_error
 #include <intrin.h>//for _tzcnt_u32, __popcnt, _bittest, _bittestandset, _bittestandreset
+#include <assert.h>
 #include "bool_vector.h"
 #include "my_memory.h"
 
 
 ui32 Bool_Vector::find_next(ui32 bit) const {
+	assert(size_ > 0);
 	if (bit >= bitsize_)
 		return bitsize_;
 	ui32 ind = bit >> UI32_LOG2BIT;
 	ui32 offset = bit & UI32_MASK;
 	ui32 buf = (data_[ind] >> offset) << offset;
-	ui32 sz = size();
 
-	while (ind < sz) {
+	while (ind < size_) {
 		offset = _tzcnt_u32(buf);//UI32_BITS==32
 		if (offset == UI32_BITS) {
 			++ind;
@@ -25,15 +26,31 @@ ui32 Bool_Vector::find_next(ui32 bit) const {
 }
 
 ui32 Bool_Vector::popcount() const {
+	assert(size_ > 0);
 	ui32 sum = 0;
-	ui32 ind = 0;
 	ui32 sz = size();
 
-	for (ind = 0; ind + 1 < sz; ++ind) {
+	for (ui32 ind = 0; ind < size_ - 1; ++ind) {
 		sum += __popcnt(data_[ind]);
 	}
-	sum += __popcnt(data_[ind] & mask());
+	sum += __popcnt(data_[size_-1] & last_mask_);
 	return sum;
+}
+
+bool Bool_Vector::any() const {
+	bool res = false;
+	assert(bitsize_ > 0);
+	res = (*data_ != 0) || (My_Memory::MM_memcmp(data_, data_ + 1, size_ - UI32_SIZE) != 0);
+	return res;
+}
+
+bool Bool_Vector::all() const {
+	bool res = false;
+	assert(size_ > 0);
+	data_[size_ - 1] |= ~last_mask_;
+	res = (*data_ != ~0) || (My_Memory::MM_memcmp(data_, data_ + 1, size_ - UI32_SIZE) != 0);
+	data_[size_ - 1] &= last_mask_;
+	return !res;
 }
 
 ui32 Bool_Vector::at(ui32 bit) const {
@@ -52,11 +69,14 @@ void Bool_Vector::reset(ui32 bit) {
 }
 
 void Bool_Vector::setall() {
-	My_Memory::MM_memset(data_, -1, size()*UI32_SIZE);
+	assert(size_ > 0);
+	My_Memory::MM_memset(data_, -1, size_*UI32_SIZE);
+	reset_irrelevant_bits();
 }
 
 void Bool_Vector::resetall() {
-	My_Memory::MM_memset(data_, 0, size()*UI32_SIZE);
+	assert(size_ > 0);
+	My_Memory::MM_memset(data_, 0, size_*UI32_SIZE);
 }
 
 void Bool_Vector::resetupto(ui32 bit) {
@@ -72,46 +92,45 @@ void Bool_Vector::resetupto(ui32 bit) {
 }
 
 void Bool_Vector::reset_irrelevant_bits() {
-	ui32 offset = bitsize_ & UI32_MASK;
-	if (offset == 0)
-		return;
-	ui32 ind = size() - 1;
-	data_[ind] &= ~(UI32_ALL << offset);
+	assert(size_ > 0);
+	data_[size_ - 1] &= last_mask_;
 }
 
-
 void Bool_Vector::copy(const Bool_Vector& src) {
-	reserve(src.bitsize_);
-	memcpy(data_, src.data_, size()*UI32_SIZE);
+	init_stats_(src.bitsize_);
+	reserve_();
+	memcpy(data_, src.data_, size_*UI32_SIZE);
 }
 
 void Bool_Vector::assign(ui32* data, ui32 bitsz) {
-	reserve(0);
+	init_stats_(bitsz);
+	reserve_();
 	data_ = data;
+}
+
+void Bool_Vector::init_stats_(ui32 bitsz) {
 	bitsize_ = bitsz;
+	if (bitsize_ != 0) {
+		size_ = ((bitsize_ - 1) >> UI32_LOG2BIT) + 1;
+		last_mask_ = ~(UI32_ALL << (bitsize_ & UI32_MASK));
+	} else {
+		last_mask_ = ~0;
+		size_ = 0;
+	}
 }
 
-void Bool_Vector::make_mask(ui32 bitsz) {
-	reserve(bitsz);
-	setall();
-	reset_irrelevant_bits();
-}
-
-
-void Bool_Vector::reserve(ui32 bitsz) {
-	ui32 sz = size_from_bitsize(bitsz);
-	if (sz == 0) {//deallocate memory
+void Bool_Vector::reserve_() {
+	if (size_ == 0) {//deallocate memory
 		if (capacity_ > 0)
 			My_Memory::MM_free(data_);
 		capacity_ = 0;
 		data_ = nullptr;
 	} else {
-		if (capacity_ < sz) {//reallocation
+		if (capacity_ < size_) {//reallocation
 			if (capacity_ > 0)
 				My_Memory::MM_free(data_);
-			data_ = static_cast<ui32*>(My_Memory::MM_malloc(sz*UI32_SIZE));
-			capacity_ = sz;
+			data_ = static_cast<ui32*>(My_Memory::MM_malloc(size_*UI32_SIZE));
+			capacity_ = size_;
 		}
 	}
-	bitsize_ = bitsz;
 }

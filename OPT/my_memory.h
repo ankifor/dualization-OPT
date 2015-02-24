@@ -39,12 +39,19 @@ public:
 		return data;
 	}
 
+	static int MM_memcmp(const void* p1, const void* p2, int size) {
+		memcmp_size += size;
+		++memcmp_times;
+		return memcmp(p1, p2, size);
+	}
+
 	static void print() {
 		printf("My_Memory statistics\n");
 		printf("\tmalloc: %d, %d b\n", malloc_times, malloc_size);
 		printf("\tfree  : %d\n", free_times);
 		printf("\tmemset: %d, %d b\n", memset_times, memset_size);
 		printf("\tmemcpy: %d, %d b\n", memcpy_times, memcpy_size);
+		printf("\tmemcmp: %d, %d b\n", memcmp_times, memcmp_size);
 	}
 
 private:
@@ -52,7 +59,9 @@ private:
 	static int free_times;   
 	static int memset_times;
 	static int memcpy_times;
+	static int memcmp_times;
 	static int malloc_size;
 	static int memcpy_size;
 	static int memset_size;
+	static int memcmp_size;
 };

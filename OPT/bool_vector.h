@@ -7,6 +7,8 @@ public:
 
 	ui32 find_next(ui32 bit) const throw();
 	ui32 popcount() const throw();
+	bool any() const throw();
+	bool all() const throw();
 
 	ui32 at(ui32 bit) const throw();
 	void set(ui32 bit) throw();
@@ -15,30 +17,34 @@ public:
 	void resetall() throw();
 	void resetupto(ui32 bit) throw();
 	void reset_irrelevant_bits() throw();
+
 	ui32& operator[] (ui32 ind) throw() { return data_[ind]; }
 	const ui32& operator[] (ui32 ind) const throw() { return data_[ind]; }
+	const void* get_data() const throw() { return data_; }
 
-	ui32 size() const throw() { return size_from_bitsize(bitsize_); }
+	ui32 size() const throw() { return size_; }
 	ui32 bitsize() const throw() { return bitsize_; }
-	ui32 mask() const throw() { return UI32_ALL >> (UI32_BITS - (bitsize_ & UI32_MASK)); }
+	ui32 mask() const throw() { return last_mask_; }
 
 	void copy(const Bool_Vector& src);
 	void assign(ui32* data, ui32 bitsz);//nocopy
-	void make_mask(ui32 bitsz);
+	void reserve(ui32 bitsz) { init_stats_(bitsz); reserve_(); }
 
-	Bool_Vector(ui32 bitsz = 0) : data_(nullptr), bitsize_(0), capacity_(0) { reserve(bitsz); }
-	Bool_Vector(ui32* data, ui32 bitsz) throw() : data_(data), bitsize_(bitsz), capacity_(0) {} //nocopy
-	~Bool_Vector() { reserve(0); }
+	Bool_Vector() : data_(nullptr), capacity_(0) { init_stats_(0); reserve_(); }
+	~Bool_Vector() { init_stats_(0);  reserve_(); }
 
 protected:
 
-	void reserve(ui32 bitsz);
-	static ui32 size_from_bitsize(ui32 bitsz) throw() { return (bitsz + UI32_BITS - 1) >> UI32_LOG2BIT; }
+	void init_stats_(ui32 bitsz) throw();//modifies bitsize_, size_, last_, mask_
+	void reserve_();	
+	//static ui32 size_from_bitsize(ui32 bitsz) throw() { return (bitsz + UI32_BITS - 1) >> UI32_LOG2BIT; }
 
 protected:
 
 	ui32* data_;
 	ui32 bitsize_;
+	ui32 size_;
+	ui32 last_mask_;
 	ui32 capacity_;
 };
 

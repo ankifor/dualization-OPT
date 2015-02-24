@@ -2,12 +2,19 @@
 
 #include <intrin.h>
 #include <ammintrin.h>
+#include <assert.h>
 #include "DynamicArray.h"
 #include "my_int.h"
 #include "bool_matrix.h"
+#include "my_memory.h"
+
+#define BUF_MEMORY_SIZE 256
 
 using namespace std;
 
+
+//static const char ZERO_MEMORY[BUF_MEMORY_SIZE] = {0};
+//static const char ONES_MEMORY[BUF_MEMORY_SIZE] = {~0};
 
 class Stack {
 public:
@@ -55,32 +62,45 @@ private:
 	ui32 sz_;
 };
 
-static bool any(const Bool_Vector& p, const Bool_Vector& mask) {
-	ui32 buf = 0;
-	for (ui32 ind = 0; ind < p.size(); ++ind) {
-		buf |= p[ind] & mask[ind];
-	}
-	return buf != 0;
+static bool any(const Bool_Vector& p) {
+	assert(BUF_MEMORY_SIZE >= p.size());
+	//int res = My_Memory::MM_memcmp(p.get_data(), ZERO_MEMORY, p.size());
+	bool res = p[0] My_Memory::MM_memcmp(p.get_data(), , p.size());
+	return res != 0;
+	//ui32 buf = 0;
+	//for (ui32 ind = 0; ind < p.size(); ++ind) {
+	//	buf |= p[ind];
+	//}
+	//return buf != 0;
 }
 
+
 //all(x) = ~~all(x) = ~any(~x)
-static bool all(const Bool_Vector& p, const Bool_Vector& mask) {
-	ui32 buf = 0;
-	for (ui32 ind = 0; ind < p.size(); ++ind) {
-		buf |= ~p[ind] & mask[ind];
-	}
-	return buf == 0;
+static bool all(const Bool_Vector& p) {
+	assert(BUF_MEMORY_SIZE >= p.size());
+	int res = My_Memory::MM_memcmp(p.get_data(), ONES_MEMORY, p.size());
+	return res != 0;
+	//ui32 buf = 0;
+	//ui32 sz = p.bitsize() >> UI32_LOG2BIT;
+	//for (ui32 ind = 0; ind < sz; ++ind) {
+	//	buf |= ~p[ind];
+	//}
+	//if (sz < p.size()) {
+	//	buf |= ~p[sz] & ~(UI32_ALL << (p.bitsize() & UI32_MASK));
+	//}
+	//return buf == 0;
 }
 
 //returns true iff x bitwise le y
 //mask should have zeros at irrelevant UI32_BITS (bitsize...size*32)
-static bool bitwise_le(const Bool_Vector& x, const Bool_Vector& y, const Bool_Vector& mask) {
+static bool bitwise_le(const Bool_Vector& x, const Bool_Vector& y) {
 	Bool_Vector buf(x.bitsize());
 	//static_cast<ui32*>(alloca(n32*UI32_SIZE));
 	for (ui32 ind = 0; ind < x.size(); ++ind) {
 		buf[ind] = x[ind] & ~y[ind];
 	}
-	return !any(buf, mask);
+	buf.reset_irrelevant_bits();
+	return !any(buf);
 }
 
 static void update_one_sums(Bool_Vector& one_sums, const Bool_Vector& row_i, const Bool_Vector& rows) {
@@ -97,7 +117,7 @@ void Dualizer_OPT::delete_le_rows(Bool_Vector& rows, const Bool_Vector& cols) co
 		for (ui32 i2 = rows.find_next(0); i2 < rows.bitsize(); i2 = rows.find_next(i2 + 1)) {
 			if (i2 == i1)
 				continue;
-			if (bitwise_le(L.row(i1), L.row(i2), cols)) {
+			if (bitwise_le(L.row(i1), L.row(i2))) {
 				rows.reset(i2);
 			}
 		}
@@ -129,9 +149,9 @@ void Dualizer_OPT::delete_fobidden_cols(const Bool_Vector& one_sums,
 			const Bool_Vector& col_j = L_t.row(j);
 
 			for (ui32 ind = 0; ind < one_sums.size(); ++ind) {
-				buf[ind] = ~col_j[ind] & col_u[ind];// &one_sums[ind];
+				buf[ind] = ~col_j[ind] & col_u[ind] & one_sums[ind];
 			}
-			if (!all(buf, one_sums)) {
+			if (!all(buf)) {
 				cols.reset(j);
 			}
 		}
