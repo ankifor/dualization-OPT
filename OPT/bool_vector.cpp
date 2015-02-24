@@ -28,10 +28,12 @@ ui32 Bool_Vector::find_next(ui32 bit) const {
 ui32 Bool_Vector::popcount() const {
 	assert(size_ > 0);
 	ui32 sum = 0;
+	ui32 buf = data_[size_ - 1];
 	data_[size_ - 1] &= last_mask_;
 	for (ui32 ind = 0; ind < size_ ; ++ind) {
 		sum += __popcnt(data_[ind]);
 	}
+	data_[size_ - 1] = buf;
 	return sum;
 }
 
