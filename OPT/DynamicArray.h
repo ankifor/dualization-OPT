@@ -13,6 +13,7 @@ public:
 	void SetNum(int num);// Set the number of valid entries. New entries will be zero
 	int GetNum() { return NumEntries; };// Get number of objects stored
 	int GetMaxNum() { return MaxNum; };// Get number of objects that can be stored without re-allocating memory
+	void Push_Empty();// Add empty object to end of array. Return its index
 	void Push(TX const & obj);// Add object to end of array. Return its index
 	void Pop();
 	TX& Top();
@@ -125,6 +126,22 @@ void DynamicArray<TX>::Push(const TX & obj) {
 		ReAllocate(NewSize);
 	}
 	Buffer[NumEntries] = obj;// Insert at top
+	if (OldBuffer != nullptr) {
+		// Old buffer can only be deleted after copying object, because obj might be contained in old buffer
+		delete[] OldBuffer;
+		OldBuffer = nullptr;
+	}
+	++NumEntries;// Increment NumEntries and return current index
+}
+
+template <typename TX>
+void DynamicArray<TX>::Push_Empty() {
+	// Add object to buffer, return index
+	if (NumEntries >= MaxNum) {
+		int NewSize = MaxNum * 2 + (AllocateSpace + sizeof(TX) - 1) / sizeof(TX);
+		ReAllocate(NewSize);
+	}
+	//Buffer[NumEntries] = obj;// Insert at top
 	if (OldBuffer != nullptr) {
 		// Old buffer can only be deleted after copying object, because obj might be contained in old buffer
 		delete[] OldBuffer;

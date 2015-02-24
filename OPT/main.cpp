@@ -40,7 +40,7 @@ void main() {
 			cout << j << ' ';
 		}
 		cout << endl;
-		a.reset_irrelevant_bits();
+//		a.reset_irrelevant_bits();
 		for (ui32 j = a.find_next(0); j < a.bitsize(); j = a.find_next(j + 1)) {
 			cout << j << ' ';
 		}

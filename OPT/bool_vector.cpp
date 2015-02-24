@@ -28,18 +28,17 @@ ui32 Bool_Vector::find_next(ui32 bit) const {
 ui32 Bool_Vector::popcount() const {
 	assert(size_ > 0);
 	ui32 sum = 0;
-	ui32 sz = size();
-
-	for (ui32 ind = 0; ind < size_ - 1; ++ind) {
+	data_[size_ - 1] &= last_mask_;
+	for (ui32 ind = 0; ind < size_ ; ++ind) {
 		sum += __popcnt(data_[ind]);
 	}
-	sum += __popcnt(data_[size_-1] & last_mask_);
 	return sum;
 }
 
 bool Bool_Vector::any() const {
 	bool res = false;
 	assert(bitsize_ > 0);
+	data_[size_ - 1] &= last_mask_;
 	res = (*data_ != 0) || (My_Memory::MM_memcmp(data_, data_ + 1, size_ - UI32_SIZE) != 0);
 	return res;
 }
@@ -71,7 +70,6 @@ void Bool_Vector::reset(ui32 bit) {
 void Bool_Vector::setall() {
 	assert(size_ > 0);
 	My_Memory::MM_memset(data_, -1, size_*UI32_SIZE);
-	reset_irrelevant_bits();
 }
 
 void Bool_Vector::resetall() {
@@ -91,10 +89,10 @@ void Bool_Vector::resetupto(ui32 bit) {
 	}
 }
 
-void Bool_Vector::reset_irrelevant_bits() {
-	assert(size_ > 0);
-	data_[size_ - 1] &= last_mask_;
-}
+//void Bool_Vector::reset_irrelevant_bits() {
+//	assert(size_ > 0);
+//	data_[size_ - 1] &= last_mask_;
+//}
 
 void Bool_Vector::copy(const Bool_Vector& src) {
 	init_stats_(src.bitsize_);
@@ -114,7 +112,7 @@ void Bool_Vector::init_stats_(ui32 bitsz) {
 		size_ = ((bitsize_ - 1) >> UI32_LOG2BIT) + 1;
 		last_mask_ = ~(UI32_ALL << (bitsize_ & UI32_MASK));
 	} else {
-		last_mask_ = ~0;
+		last_mask_ = UI32_ALL;
 		size_ = 0;
 	}
 }
