@@ -1,7 +1,7 @@
-#include <malloc.h>//for malloc
 #include <stdexcept>//for runtime_error
 #include <intrin.h>//for _tzcnt_u32, __popcnt, _bittest, _bittestandset, _bittestandreset
 #include "bool_vector.h"
+#include "my_memory.h"
 
 
 ui32 Bool_Vector::find_next(ui32 bit) const {
@@ -52,18 +52,18 @@ void Bool_Vector::reset(ui32 bit) {
 }
 
 void Bool_Vector::setall() {
-	memset(data_, -1, size()*UI32_SIZE);
+	My_Memory::MM_memset(data_, -1, size()*UI32_SIZE);
 }
 
 void Bool_Vector::resetall() {
-	memset(data_, 0, size()*UI32_SIZE);
+	My_Memory::MM_memset(data_, 0, size()*UI32_SIZE);
 }
 
 void Bool_Vector::resetupto(ui32 bit) {
 	if (bit >= bitsize_)
 		bit = bitsize_;
 	ui32 k = bit >> UI32_LOG2BIT;
-	memset(data_, 0, k*UI32_SIZE);
+	My_Memory::MM_memset(data_, 0, k*UI32_SIZE);
 	ui32 offset = bit & UI32_MASK;
 	if (offset > 0) {
 		ui32 mask = UI32_ALL << offset;
@@ -101,18 +101,16 @@ void Bool_Vector::make_mask(ui32 bitsz) {
 void Bool_Vector::reserve(ui32 bitsz) {
 	ui32 sz = size_from_bitsize(bitsz);
 	if (sz == 0) {//deallocate memory
-		if (capacity_ > 0 && data_ != nullptr)
-			free(data_);
+		if (capacity_ > 0)
+			My_Memory::MM_free(data_);
 		capacity_ = 0;
 		data_ = nullptr;
 	} else {
 		if (capacity_ < sz) {//reallocation
-			if (capacity_ > 0 && data_ != nullptr)
-				free(data_);
-			data_ = static_cast<ui32*>(malloc(sz*UI32_SIZE));
+			if (capacity_ > 0)
+				My_Memory::MM_free(data_);
+			data_ = static_cast<ui32*>(My_Memory::MM_malloc(sz*UI32_SIZE));
 			capacity_ = sz;
-			if (data_ == nullptr)
-				throw std::runtime_error("Bool_Vector::reserve::Memory allocation problem");
 		}
 	}
 	bitsize_ = bitsz;

@@ -112,7 +112,7 @@ void DynamicArray<TX>::SetNum(int num) {
 		Reserve(num);
 	}
 	if (num > NumEntries) {
-		memset(Buffer + NumEntries, 0, (num - NumEntries) * sizeof(TX));// Fill new entries with zero
+		My_Memory::MM_memset(Buffer + NumEntries, 0, (num - NumEntries) * sizeof(TX));// Fill new entries with zero
 	}
 	NumEntries = num;//Set new DataSize
 }

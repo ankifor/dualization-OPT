@@ -153,8 +153,8 @@ void Dualizer_OPT::run() {
 
 void Dualizer_OPT::init_masks() {
 	ui32 ind = 0;
-	mask_rows_ = static_cast<ui32*>(malloc(L.row32()*UI32_SIZE));
-	mask_cols_ = static_cast<ui32*>(malloc(L_t.row32()*UI32_SIZE));
+	mask_rows_ = static_cast<ui32*>(My_Memory::MM_malloc(L.row32()*UI32_SIZE));
+	mask_cols_ = static_cast<ui32*>(My_Memory::MM_malloc(L_t.row32()*UI32_SIZE));
 	if (mask_rows_ == nullptr || mask_cols_ == nullptr)
 		throw std::runtime_error("Dualizer_OPT::run::Allocation memory problem");
 	

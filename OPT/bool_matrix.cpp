@@ -1,4 +1,4 @@
-#include <memory.h>//for malloc, realloc, memset, memcpy
+//#include <memory.h>//for memset, memcpy
 #include <intrin.h>//for _bittest, _bittestandset, _bittestandreset
 #include <cstdio>//for fgetc, EOF, fopen, fclose, fputc
 #include <stdexcept>//for runtime_error
@@ -7,7 +7,7 @@
 #include <algorithm>//for std::swap
 
 #include "bool_matrix.h"
-
+#include "my_memory.h"
 
 using namespace std;
 
@@ -72,18 +72,16 @@ void Bool_Matrix::reserve(ui32 m, ui32 n) {
 	ui32 row_sz = size_from_bitsize(n);
 	ui32 sz = m*row_sz;
 	if (sz == 0) {//deallocate memory
-		if (capacity_ > 0 && data_ != nullptr)
-			free(data_);
+		if (capacity_ > 0)
+			My_Memory::MM_free(data_);
 		capacity_ = 0;
 		data_ = nullptr;
 	} else {
 		if (capacity_ < sz) {//reallocation
-			if (capacity_ > 0 && data_ != nullptr)
-				free(data_);
-			data_ = static_cast<ui32*>(malloc(sz*UI32_SIZE));
+			if (capacity_ > 0)
+				My_Memory::MM_free(data_);
+			data_ = static_cast<ui32*>(My_Memory::MM_malloc(sz*UI32_SIZE));
 			capacity_ = sz;
-			if (data_ == nullptr)
-				throw std::runtime_error("Bool_Matrix::reserve::Memory allocation problem");
 		}
 	}
 	m_ = m;
@@ -92,7 +90,7 @@ void Bool_Matrix::reserve(ui32 m, ui32 n) {
 
 void Bool_Matrix::random(ui32 m, ui32 n, float d, unsigned seed) {
 	reserve(m,n);
-	memset(data_, 0, m*row_size()*UI32_SIZE);
+	My_Memory::MM_memset(data_, 0, m*row_size()*UI32_SIZE);
 	ui32 threshold = ui32(RAND_MAX * d);
 	if (seed == 0)
 		seed = static_cast<unsigned>(time(nullptr));
@@ -189,7 +187,7 @@ void Bool_Matrix::read(FILE* p_file) {
 	ui32 n = 0;
 	read_get_width_and_check(p_file, m, n);
 	reserve(m, n);
-	memset(data_, 0, m*row_size()*UI32_SIZE);
+	My_Memory::MM_memset(data_, 0, m*row_size()*UI32_SIZE);
 	for (ui32 i = 0; i < m_; ++i) {
 		for (ui32 j = 0; j < n_; ++j) {
 			if (skip_space(p_file) == '1')
