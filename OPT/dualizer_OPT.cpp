@@ -56,7 +56,7 @@ void Dualizer_OPT::delete_le_rows(Bool_Vector& rows, const Bool_Vector& cols) co
 		return;
 
 	Bool_Vector buf;
-	buf.assign(static_cast<ui32*>(My_Memory::MM_alloca(cols.size()*UI32_SIZE)), cols.bitsize());
+	buf.assign(static_cast<ui32*>(alloca(cols.size()*UI32_SIZE)), cols.bitsize());
 
 	for (ui32 i1 = rows.find_next(0); i1 < rows.bitsize(); i1 = rows.find_next(i1 + 1)) {
 		const Bool_Vector& row1 = L.row(i1);
@@ -92,7 +92,7 @@ void Dualizer_OPT::delete_fobidden_cols(const Bool_Vector& one_sums,
 	Bool_Vector& cols, const Bool_Vector& cov) const
 {
 	Bool_Vector buf;
-	buf.assign(static_cast<ui32*>(My_Memory::MM_alloca(one_sums.size()*UI32_SIZE)), one_sums.bitsize());
+	buf.assign(static_cast<ui32*>(alloca(one_sums.size()*UI32_SIZE)), one_sums.bitsize());
 
 	for (ui32 u = cov.find_next(0); u < cov.bitsize(); u = cov.find_next(u + 1)) {
 		const Bool_Vector& col_u = L_t.row(u);

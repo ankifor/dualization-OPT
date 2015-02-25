@@ -8,12 +8,10 @@
 
 int My_Memory::free_times = 0;
 int My_Memory::malloc_times = 0;
-int My_Memory::alloca_times = 0;
 int My_Memory::memset_times = 0;
 int My_Memory::memcpy_times = 0;
 int My_Memory::memcmp_times = 0;
 int My_Memory::malloc_size = 0;
-int My_Memory::alloca_size = 0;
 int My_Memory::memcpy_size = 0;
 int My_Memory::memcmp_size = 0;
 int My_Memory::memset_size = 0;
