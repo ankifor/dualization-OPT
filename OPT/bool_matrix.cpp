@@ -45,7 +45,7 @@ service functions
 void Bool_Matrix::copy(const Bool_Matrix& src) {
 	if (this != &src) {
 		reserve(src.m_, src.n_);
-		memcpy(data_, src.data_, m_*row_size()*UI32_SIZE);
+		My_Memory::MM_memcpy(data_, src.data_, m_*row_size()*UI32_SIZE);
 	}
 }
 
@@ -73,7 +73,7 @@ void Bool_Matrix::submatrix(const Bool_Vector& rows) {
 	reserve(rows.popcount(), n_);
 	for (ui32 j = rows.find_next(0), k = 0; j < rows.bitsize(); j = rows.find_next(j + 1), ++k) {
 		if (k != j)
-			memcpy(&data_[k*row_size()], &data_[j*row_size()], row_size()*UI32_SIZE);
+			My_Memory::MM_memcpy(&data_[k*row_size()], &data_[j*row_size()], row_size()*UI32_SIZE);
 	}
 }
 

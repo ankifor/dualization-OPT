@@ -1,35 +1,32 @@
-#include "dualizer_OPT.h"
-
-//#include <intrin.h>
-//#include <ammintrin.h>
 #include <assert.h>//for assert
 #include <string> //for string(), +
-#include "DynamicArray.h"
-#include "my_int.h"
-#include "bool_matrix.h"
-#include "my_memory.h"
 
-#define BUF_MEMORY_SIZE 256
+#include "my_int.h"
+#include "my_memory.h"
+#include "stack_array.h"
+#include "bool_matrix.h"
+
+#include "dualizer_OPT.h"
 
 using namespace std;
 
 class Stack {
 public:
 	struct Element {
-		Element() : rows(), cols(), support_rows(), covered_rows() {}
-		Bool_Vector rows;//m
-		Bool_Vector cols;//n
-		Bool_Vector support_rows;//m
-		Bool_Vector covered_rows;//m
+		Bool_Vector rows;
+		Bool_Vector cols;
+		Bool_Vector support_rows;
+		Bool_Vector covered_rows;
 		ui32 h_last;
 		ui32 j_next;
 	};
+	
 	void push(Bool_Vector& rows, Bool_Vector& cols, 
 		Bool_Vector& support_rows, Bool_Vector& covered_rows,
 		ui32 h_last, ui32 j_next)
 	{
-		data_.Push_Empty();
-		Element& tmp = data_.Top();
+		data_.push_empty();
+		Element& tmp = data_.top();
 		tmp.rows.copy(rows);
 		tmp.cols.copy(cols);
 		tmp.support_rows.copy(support_rows);
@@ -37,13 +34,14 @@ public:
 		tmp.h_last = h_last;
 		tmp.j_next = j_next;
 	}
-	void pop() { data_.Pop(); }
-	//Element& top() { return data_.Top(); }
+
+	void pop() { data_.pop(); }
+
 	void copy_top(Bool_Vector& rows, Bool_Vector& cols,
 		Bool_Vector& support_rows, Bool_Vector& covered_rows,
 		ui32& h_last, ui32& j_next) 
 	{
-		Element& tmp = data_.Top();
+		Element& tmp = data_.top();
 		rows.copy(tmp.rows);
 		cols.copy(tmp.cols);
 		support_rows.copy(tmp.support_rows);
@@ -51,13 +49,14 @@ public:
 		h_last = tmp.h_last;
 		j_next = tmp.j_next;
 	}
-	void update_j_next(ui32 j_next) { data_.Top().j_next = j_next; }
-	bool empty() { return  data_.GetNum() == 0; }
-	int size() { return data_.GetNum(); }
-	Stack(ui32 size = 16) { data_.Reserve(size); }
+
+	void update_j_next(ui32 j_next) { data_.top().j_next = j_next; }
+	bool empty() { return  data_.size() == 0; }
+	int size() { return data_.size(); }
+	Stack(ui32 size = 16) { data_.reserve(size); }
 	~Stack() {}
 private:
-	DynamicArray<Element> data_;
+	Stack_Array<Element> data_;
 };
 
 static void update_covered_and_support_rows(Bool_Vector& rows, Bool_Vector& covered_rows, 

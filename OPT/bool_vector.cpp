@@ -89,7 +89,6 @@ void Bool_Vector::resetupto(ui32 bit) {
 	My_Memory::MM_memset(data_, 0, k*UI32_SIZE);
 	ui32 offset = bit & UI32_MASK;
 	ui32 mask = UI32_ALL << (offset + 1);
-	ui32 tmp = UI32_ALL << (31 + 1);
 	data_[k] &= mask;
 }
 
@@ -101,7 +100,7 @@ void Bool_Vector::resetupto(ui32 bit) {
 void Bool_Vector::copy(const Bool_Vector& src) {
 	init_stats_(src.bitsize_);
 	reserve_(size_);
-	memcpy(data_, src.data_, size_*UI32_SIZE);
+	My_Memory::MM_memcpy(data_, src.data_, size_*UI32_SIZE);
 }
 
 void Bool_Vector::assign(ui32* data, ui32 bitsz) {	
@@ -131,8 +130,8 @@ void Bool_Vector::reserve_(ui32 capacity) {
 		if (capacity_ < capacity) {//reallocation
 			if (capacity_ > 0)
 				My_Memory::MM_free(data_);
-			data_ = static_cast<ui32*>(My_Memory::MM_malloc(size_*UI32_SIZE));
-			capacity_ = size_;
+			data_ = static_cast<ui32*>(My_Memory::MM_malloc(capacity*UI32_SIZE));
+			capacity_ = capacity;
 		}
 	}
 }
