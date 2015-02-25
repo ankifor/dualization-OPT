@@ -42,7 +42,7 @@ bool Bool_Vector::any() const {
 	ui32 buf = data_[size_ - 1];
 	assert(bitsize_ > 0);
 	data_[size_ - 1] &= last_mask_;
-	res = (*data_ != 0) || (My_Memory::MM_memcmp(data_, data_ + 1, size_ - UI32_SIZE) != 0);
+	res = (*data_ != 0) || (My_Memory::MM_memcmp(data_, data_ + 1, UI32_SIZE*(size_ - 1)) != 0);
 	data_[size_ - 1] = buf;
 	return res;
 }
@@ -52,7 +52,7 @@ bool Bool_Vector::all() const {
 	ui32 buf = data_[size_ - 1];
 	assert(size_ > 0);
 	data_[size_ - 1] |= ~last_mask_;
-	res = (*data_ != ~0) || (My_Memory::MM_memcmp(data_, data_ + 1, size_ - UI32_SIZE) != 0);
+	res = (*data_ != ~0) || (My_Memory::MM_memcmp(data_, data_ + 1, UI32_SIZE*(size_ - 1)) != 0);
 	data_[size_ - 1] = buf;
 	return !res;
 }
@@ -88,10 +88,9 @@ void Bool_Vector::resetupto(ui32 bit) {
 	ui32 k = bit >> UI32_LOG2BIT;
 	My_Memory::MM_memset(data_, 0, k*UI32_SIZE);
 	ui32 offset = bit & UI32_MASK;
-	if (offset > 0) {
-		ui32 mask = UI32_ALL << offset;
-		data_[k] &= mask;
-	}
+	ui32 mask = UI32_ALL << (offset + 1);
+	ui32 tmp = UI32_ALL << (31 + 1);
+	data_[k] &= mask;
 }
 
 //void Bool_Vector::reset_irrelevant_bits() {

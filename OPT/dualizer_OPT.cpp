@@ -16,6 +16,7 @@ using namespace std;
 class Stack {
 public:
 	struct Element {
+		Element() : rows(), cols(), support_rows(), covered_rows() {}
 		Bool_Vector rows;//m
 		Bool_Vector cols;//n
 		Bool_Vector support_rows;//m
@@ -63,7 +64,7 @@ static void update_covered_and_support_rows(Bool_Vector& rows, Bool_Vector& cove
 	Bool_Vector& support_rows, const Bool_Vector& col_j) throw()
 {
 	for (ui32 ind = 0; ind < rows.size(); ++ind) {
-		support_rows[ind] = (rows[ind] ^ col_j[ind]) & (rows[ind] | support_rows[ind]);
+		support_rows[ind] = (~rows[ind] ^ col_j[ind]) & (rows[ind] | support_rows[ind]);
 		rows[ind] &= ~col_j[ind];
 		covered_rows[ind] |= col_j[ind];
 	}
@@ -112,19 +113,26 @@ void Dualizer_OPT::delete_le_rows(Bool_Vector& rows, const Bool_Vector& cols) co
 void Dualizer_OPT::delete_fobidden_cols(const Bool_Vector& support_rows,
 	Bool_Vector& cols, const Bool_Vector& cov) const throw()
 {
-	Bool_Vector buf;
-	buf.assign(static_cast<ui32*>(alloca(support_rows.size()*UI32_SIZE)), support_rows.bitsize());
+	Bool_Vector buf1;
+	buf1.assign(static_cast<ui32*>(alloca(support_rows.size()*UI32_SIZE)), support_rows.bitsize());
+
+	Bool_Vector buf2;
+	buf2.assign(static_cast<ui32*>(alloca(support_rows.size()*UI32_SIZE)), support_rows.bitsize());
 
 	for (ui32 u = cov.find_next(0); u < cov.bitsize(); u = cov.find_next(u + 1)) {
 		const Bool_Vector& col_u = L_t.row(u);
+
+		for (ui32 ind = 0; ind < support_rows.size(); ++ind) {
+			buf1[ind] = col_u[ind] & support_rows[ind];
+		}
 
 		for (ui32 j = cols.find_next(0); j < cols.bitsize(); j = cols.find_next(j + 1)) {
 			const Bool_Vector& col_j = L_t.row(j);
 
 			for (ui32 ind = 0; ind < support_rows.size(); ++ind) {
-				buf[ind] = ~col_j[ind] & col_u[ind] & support_rows[ind];
+				buf2[ind] = col_j[ind] | ~buf1[ind];
 			}
-			if (!buf.all()) {
+			if (buf2.all()) {
 				cols.reset(j);
 			}
 		}

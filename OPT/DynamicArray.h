@@ -163,7 +163,7 @@ TX& DynamicArray<TX>::Top() {
 	if (NumEntries <= 0) {
 		throw std::runtime_error("DynamicArray::Top::Array is empty");
 	}
-	return Buffer[NumEntries];
+	return Buffer[NumEntries - 1];
 }
 
 template <typename TX>

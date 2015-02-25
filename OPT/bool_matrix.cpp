@@ -60,6 +60,7 @@ void Bool_Matrix::swap(Bool_Matrix& src) {
 
 void Bool_Matrix::transpose(const Bool_Matrix& src) {
 	reserve(src.n_, src.m_);
+	My_Memory::MM_memset(data_, 0, m_*row_size()*UI32_SIZE);
 	for (ui32 i = 0; i < src.m_; ++i) {
 		for (ui32 j = 0; j < src.n_; ++j) {
 			if (src.at(i, j))
@@ -70,7 +71,7 @@ void Bool_Matrix::transpose(const Bool_Matrix& src) {
 
 void Bool_Matrix::submatrix(const Bool_Vector& rows) {
 	reserve(rows.popcount(), n_);
-	for (ui32 j = rows.find_next(0), k = 0; j < rows.size(); j = rows.find_next(j + 1), ++k) {
+	for (ui32 j = rows.find_next(0), k = 0; j < rows.bitsize(); j = rows.find_next(j + 1), ++k) {
 		if (k != j)
 			memcpy(&data_[k*row_size()], &data_[j*row_size()], row_size()*UI32_SIZE);
 	}
