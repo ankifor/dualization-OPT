@@ -28,16 +28,16 @@ public:
 
 	void copy(const Bool_Vector& src);
 	void assign(ui32* data, ui32 bitsz);//nocopy
-	void reserve(ui32 bitsz) { init_stats_(bitsz); reserve_(); }
+	void reserve(ui32 bitsz) { init_stats_(bitsz); reserve_(size_); }
 
-	Bool_Vector() : data_(nullptr), capacity_(0) { init_stats_(0); reserve_(); }
+	Bool_Vector() : data_(nullptr), capacity_(0) { init_stats_(0); reserve_(0); }
 	Bool_Vector(ui32* data, ui32 bitsz) : data_(nullptr), capacity_(0) { assign(data, bitsz); }
-	~Bool_Vector() { init_stats_(0);  reserve_(); }
+	~Bool_Vector() { init_stats_(0);  reserve_(0); }
 
 protected:
 
 	void init_stats_(ui32 bitsz) throw();//modifies bitsize_, size_, last_, mask_
-	void reserve_();	
+	void reserve_(ui32 capacity);	
 	//static ui32 size_from_bitsize(ui32 bitsz) throw() { return (bitsz + UI32_BITS - 1) >> UI32_LOG2BIT; }
 
 protected:

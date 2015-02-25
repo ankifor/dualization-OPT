@@ -30,9 +30,9 @@ void main() {
 	try {
 		L.read("mat.txt");
 		//L.random(m, n, 0.5f);
-		//L.print(stdout);
-		//cout << endl;
-		solver.init(L);
+		L.print(stdout);
+		cout << endl;
+		solver.init(L, "res.txt");
 		solver.run();
 
 		
