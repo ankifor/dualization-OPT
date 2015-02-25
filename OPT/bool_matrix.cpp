@@ -68,6 +68,14 @@ void Bool_Matrix::transpose(const Bool_Matrix& src) {
 	}
 }
 
+void Bool_Matrix::submatrix(const Bool_Vector& rows) {
+	reserve(rows.popcount(), n_);
+	for (ui32 j = rows.find_next(0), k = 0; j < rows.size(); j = rows.find_next(j + 1), ++k) {
+		if (k != j)
+			memcpy(&data_[k*row_size()], &data_[j*row_size()], row_size()*UI32_SIZE);
+	}
+}
+
 void Bool_Matrix::reserve(ui32 m, ui32 n) {
 	ui32 row_sz = size_from_bitsize(n);
 	ui32 sz = m*row_sz;
@@ -100,17 +108,6 @@ void Bool_Matrix::random(ui32 m, ui32 n, float d, unsigned seed) {
 			if (static_cast<ui32>(rand()) < threshold)
 				set(i, j);
 		}      
-	}
-}
-
-/**********************************************************
-constructors
-**********************************************************/
-
-Bool_Matrix::Bool_Matrix(const Bool_Matrix& src, const Bool_Vector& rows) : data_(nullptr), n_(0), m_(0) {
-	reserve(rows.popcount(), src.n_);
-	for (ui32 j = rows.find_next(0), k = 0; j < rows.size(); j = rows.find_next(j + 1), ++k) {
-		memcpy(&data_[k*row_size()], &src.data_[j*row_size()], row_size()*UI32_SIZE);
 	}
 }
 

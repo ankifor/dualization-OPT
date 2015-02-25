@@ -5,27 +5,34 @@
 #include "bool_matrix.h"
 
 class Dualizer_OPT {
+
 public:
-	Dualizer_OPT() : mask_cols_(nullptr), mask_rows_(nullptr) {}
+
+	Dualizer_OPT() throw() : p_file(nullptr), n_coverings(0) {}
 	~Dualizer_OPT() throw() { clear(); }
-	void init(const Bool_Matrix& L0, const char* file_name);
+
+	void init(const Bool_Matrix& L0, const char* file_name = nullptr, const char* mode = "w");
 	void clear() throw();
 	void run();
+
 protected:
-	bool check_covering(const Bool_Vector& covered_rows) const throw();
+
+	void delete_zero_cols(const Bool_Vector& rows, Bool_Vector& cols) const throw();
 	void delete_le_rows(Bool_Vector& rows, const Bool_Vector& cols) const throw();
-	void delete_covered_rows(Bool_Vector& rows, const Bool_Vector& col_j) const throw();
 	void delete_fobidden_cols(const Bool_Vector& one_sums, 
 		Bool_Vector& cols, const Bool_Vector& cov) const throw();
-	void delete_zero_cols(const Bool_Vector& rows, Bool_Vector& cols, const Bool_Vector& mask) const throw();
-	void init_masks();
+
+	void print_covering(const Bool_Vector& covering);
 	
-protected:
+private:
+
 	Dualizer_OPT(Dualizer_OPT const&) {};
 	void operator = (Dualizer_OPT const&) {};
+
+protected:
+
 	Bool_Matrix L;
 	Bool_Matrix L_t;
-	ui32* mask_rows_;
-	ui32* mask_cols_;
+	ui32 n_coverings;
 	FILE* p_file;
 };

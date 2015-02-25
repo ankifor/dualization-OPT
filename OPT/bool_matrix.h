@@ -24,13 +24,14 @@ public:
 	//service functions
 	void copy(const Bool_Matrix& src);
 	void swap(Bool_Matrix& src) throw();
-	void transpose(const Bool_Matrix& src);	
+	void transpose(const Bool_Matrix& src);
+	void submatrix(const Bool_Vector& rows);
 	void random(ui32 m, ui32 n, float d = 0.5, unsigned seed = 0);//generate random matrix with P(a[i,j]=1)=d
 
 	//constructors
 	Bool_Matrix(ui32 m = 0, ui32 n = 0) : data_(nullptr), n_(0), m_(0) { reserve(m, n); }
 	Bool_Matrix(const Bool_Matrix& src) : data_(nullptr), n_(0), m_(0) { copy(src); }
-	Bool_Matrix(const Bool_Matrix& src, const Bool_Vector& rows);
+	//Bool_Matrix(const Bool_Matrix& src, const Bool_Vector& rows);
 	Bool_Matrix& operator=(const Bool_Matrix& src) { copy(src); return *this; }
 	~Bool_Matrix() { reserve(0,0); }
 
