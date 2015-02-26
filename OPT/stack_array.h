@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdexcept>//for std::runtime_error
+#include <assert.h>
 #include "my_int.h"
 #include "my_memory.h"
 
@@ -39,7 +40,7 @@ public:
 		}
 	}
 
-	int size() { 
+	ui32 size() const throw() { 
 		return size_; 
 	}
 
@@ -56,24 +57,40 @@ public:
 			ui32 capacity = capacity_ * 2 + (AllocateSpace + sizeof(TX) - 1) / sizeof(TX);
 			reserve(capacity);
 		}
-		Buffer[size_] = obj;
+		data_[size_] = obj;
 		++size_;
 	}
 	
 	void pop() {
-		if (size_ == 0) {
-			throw std::runtime_error("stack_array::pop::array is empty");
-		}
+		assert(size_ > 0);
+		//if (size_ == 0) {
+		//	throw std::runtime_error("stack_array::pop::array is empty");
+		//}
 		--size_;
 	}
 	
 	TX& top() {
-		if (size_ == 0) {
-			throw std::runtime_error("stack_array::pop::array is empty");
-		}
+		assert(size_ > 0);
+		//if (size_ == 0) {
+		//	throw std::runtime_error("stack_array::pop::array is empty");
+		//}
 		return data_[size_ - 1];
 	}
 
+	TX& operator[] (ui32 ind) throw() {
+		assert(ind < size_);
+		return data_[ind];
+	}
+
+	const TX& operator[] (ui32 ind) const throw() {
+		assert(ind < size_);
+		return data_[ind];
+	}
+	
+	const TX* get_data() const throw() {
+		return data_;
+	}
+	
 	// Define desired allocation size
 	enum DefineSize {
 		AllocateSpace = 1024// Minimum size, in bytes, of automatic re-allocation done by Push

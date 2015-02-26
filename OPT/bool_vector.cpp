@@ -85,10 +85,10 @@ void Bool_Vector::resetall() {
 void Bool_Vector::resetupto(ui32 bit) {
 	if (bit >= bitsize_)
 		bit = bitsize_;
-	ui32 k = bit >> UI32_LOG2BIT;
+	ui32 k = (bit + 1) >> UI32_LOG2BIT;
 	My_Memory::MM_memset(data_, 0, k*UI32_SIZE);
-	ui32 offset = bit & UI32_MASK;
-	ui32 mask = UI32_ALL << (offset + 1);
+	ui32 offset = (bit + 1) & UI32_MASK;
+	ui32 mask = UI32_ALL << offset;
 	data_[k] &= mask;
 }
 

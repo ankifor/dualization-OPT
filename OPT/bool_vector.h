@@ -18,13 +18,13 @@ public:
 	void resetupto(ui32 bit) throw();
 	//void reset_irrelevant_bits() throw();
 
-	ui32& operator[] (ui32 ind) throw() { return data_[ind]; }
-	const ui32& operator[] (ui32 ind) const throw() { return data_[ind]; }
-	const void* get_data() const throw() { return data_; }
+	inline ui32& operator[] (ui32 ind) throw() { return data_[ind]; }
+	inline const ui32& operator[] (ui32 ind) const throw() { return data_[ind]; }
+	inline const void* get_data() const throw() { return data_; }
 
-	ui32 size() const throw() { return size_; }
-	ui32 bitsize() const throw() { return bitsize_; }
-	ui32 mask() const throw() { return last_mask_; }
+	inline ui32 size() const throw() { return size_; }
+	inline ui32 bitsize() const throw() { return bitsize_; }
+	inline ui32 mask() const throw() { return last_mask_; }
 
 	void copy(const Bool_Vector& src);
 	void assign(ui32* data, ui32 bitsz);//nocopy
