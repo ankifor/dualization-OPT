@@ -40,9 +40,7 @@ public:
 		}
 	}
 
-	ui32 size() const throw() { 
-		return size_; 
-	}
+	ui32 size() const throw() { return size_; }
 
 	void push_empty() {
 		if (size_ >= capacity_) {
@@ -61,7 +59,7 @@ public:
 		++size_;
 	}
 	
-	void pop() {
+	void pop() throw() {
 		assert(size_ > 0);
 		//if (size_ == 0) {
 		//	throw std::runtime_error("stack_array::pop::array is empty");
@@ -69,7 +67,7 @@ public:
 		--size_;
 	}
 	
-	TX& top() {
+	TX& top() throw() {
 		assert(size_ > 0);
 		//if (size_ == 0) {
 		//	throw std::runtime_error("stack_array::pop::array is empty");

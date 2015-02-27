@@ -2,8 +2,7 @@
 #include <cstdio>
 #include "my_int.h"
 #include "stack_array.h"
-#include "bool_vector.h"
-#include "bool_matrix.h"
+#include "binary.h"
 
 class Dualizer_OPT {
 protected:
@@ -31,6 +30,7 @@ protected:
 			} while (num > 0);
 
 			do {
+#pragma warning(suppress: 6385)
 				text_.push(buf[--len]);
 			} while (len > 0);
 
@@ -71,26 +71,40 @@ public:
 	Dualizer_OPT() throw() : p_file(nullptr), n_coverings(0) {}
 	~Dualizer_OPT() throw() { clear(); }
 
-	void init(const Bool_Matrix& L0, const char* file_name = nullptr, const char* mode = "w");
+	void init(const binary::Matrix& L0, const char* file_name = nullptr, const char* mode = "w");
 	void clear() throw();
 	void run();
 
 protected:
 
-	void delete_zero_cols(const Bool_Vector& rows, Bool_Vector& cols) const throw();
-	void delete_le_rows(Bool_Vector& rows, const Bool_Vector& cols) const throw();
-	void delete_fobidden_cols(const Bool_Vector& one_sums, 
-		Bool_Vector& cols, const Covering& cov) const throw();
+	void update_covered_and_support_rows(ui32* rows, ui32* covered_rows,
+		ui32* support_rows, const ui32* col_j) const throw();
+
+	void delete_zero_cols(const ui32* rows, ui32* cols) const throw();
 	
+	void delete_fobidden_cols(const ui32* one_sums, 
+		ui32* cols, const Covering& cov) const throw();
+	
+	void delete_le_rows(ui32* rows, const ui32* cols) const throw();
+
 private:
 
 	Dualizer_OPT(Dualizer_OPT const&) {};
 	void operator = (Dualizer_OPT const&) {};
 
-protected:
+	ui32 m() const throw() { return L.height(); }
+	ui32 size_m() const throw() { return binary::size(m()); }
+	ui32 mask_m() const throw() { return binary::mask(m()); }
 
-	Bool_Matrix L;
-	Bool_Matrix L_t;
+	ui32 n() const throw() { return L.width(); }
+	ui32 size_n() const throw() { return binary::size(n()); }
+	ui32 mask_n() const throw() { return binary::mask(n()); }
+
+private:
+
+	binary::Matrix L;
+	binary::Matrix L_t;
+
 	ui32 n_coverings;
 	FILE* p_file;
 };

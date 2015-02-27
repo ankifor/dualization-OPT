@@ -1,165 +1,194 @@
 #include <assert.h>//for assert
 #include <string> //for string(), +
 
-#include "my_int.h"
-#include "my_memory.h"
-#include "stack_array.h"
-#include "bool_matrix.h"
-
 #include "dualizer_OPT.h"
+#include "my_memory.h"
+
+
+
 
 using namespace std;
 
 class Stack {
 public:
 	struct Element {
-		Bool_Vector rows;
-		Bool_Vector cols;
-		Bool_Vector support_rows;
-		Bool_Vector covered_rows;
-		ui32 h_last;
-		ui32 j_next;
+		ui32* p;
+		Element() : p(nullptr) {}
+		~Element() { 
+			if (p != nullptr) {
+				My_Memory::MM_free(p);
+				p = nullptr;
+			}
+		}
 	};
 	
-	void push(Bool_Vector& rows, Bool_Vector& cols, 
-		Bool_Vector& support_rows, Bool_Vector& covered_rows,
+	void push(ui32* rows, ui32* cols, 
+		ui32* support_rows, ui32* covered_rows,
 		ui32 h_last, ui32 j_next)
 	{
 		data_.push_empty();
-		Element& tmp = data_.top();
-		tmp.rows.copy(rows);
-		tmp.cols.copy(cols);
-		tmp.support_rows.copy(support_rows);
-		tmp.covered_rows.copy(covered_rows);
-		tmp.h_last = h_last;
-		tmp.j_next = j_next;
+		
+		if (data_.top().p == nullptr) {
+			data_.top().p = static_cast<ui32*>(My_Memory::MM_malloc(element_size * UI32_SIZE));
+		}
+		
+		ui32* dst = data_.top().p;
+		My_Memory::MM_memcpy(dst, rows, m_ * UI32_SIZE); dst += m_;
+		My_Memory::MM_memcpy(dst, support_rows, m_ * UI32_SIZE); dst += m_;
+		My_Memory::MM_memcpy(dst, covered_rows, m_ * UI32_SIZE); dst += m_;
+		My_Memory::MM_memcpy(dst, cols, n_ * UI32_SIZE); dst += n_;
+		*dst = h_last; dst += 1;
+		*dst = j_next;
 	}
 
-	void pop() { data_.pop(); }
+	ui32& top_j_next() { return *(data_.top().p + 3 * m_ + n_ + 1); }
 
-	void copy_top(Bool_Vector& rows, Bool_Vector& cols,
-		Bool_Vector& support_rows, Bool_Vector& covered_rows,
-		ui32& h_last, ui32& j_next) 
+	void pop() throw() { data_.pop(); }
+
+	void copy_top(ui32* rows, ui32* cols,
+		ui32* support_rows, ui32* covered_rows,
+		ui32& h_last, ui32& j_next) throw()
 	{
-		Element& tmp = data_.top();
-		rows.copy(tmp.rows);
-		cols.copy(tmp.cols);
-		support_rows.copy(tmp.support_rows);
-		covered_rows.copy(tmp.covered_rows);
-		h_last = tmp.h_last;
-		j_next = tmp.j_next;
+		ui32* dst = data_.top().p;
+		My_Memory::MM_memcpy(rows, dst, m_ * UI32_SIZE); dst += m_;
+		My_Memory::MM_memcpy(support_rows, dst, m_ * UI32_SIZE); dst += m_;
+		My_Memory::MM_memcpy(covered_rows, dst, m_ * UI32_SIZE); dst += m_;
+		My_Memory::MM_memcpy(cols, dst, n_ * UI32_SIZE); dst += n_;
+		h_last = *dst; dst += 1;
+		j_next = *dst;
 	}
 
-	Element& top() { return  data_.top(); }
 
-	bool empty() { return  data_.size() == 0; }
-	int size() { return data_.size(); }
-	Stack(ui32 size = 16) { data_.reserve(size); }
+	bool empty() const throw() { return  data_.size() == 0; }
+
+	int size() const throw() { return data_.size(); }
+
+	Stack(ui32 m, ui32 n, ui32 size = 16) { 
+		data_.reserve(size); 
+		m_ = m;
+		n_ = n;
+		element_size = 3 * m_ + n_ + 2;
+	}
+
 	~Stack() {}
 private:
+
 	Stack_Array<Element> data_;
+	ui32 m_;
+	ui32 n_;
+	ui32 element_size;
 };
 
-static void update_covered_and_support_rows(Bool_Vector& rows, Bool_Vector& covered_rows, 
-	Bool_Vector& support_rows, const Bool_Vector& col_j) throw()
+void Dualizer_OPT::update_covered_and_support_rows(ui32* rows, ui32* covered_rows,
+	ui32* support_rows, const ui32* col_j) const throw()
 {
-	for (ui32 ind = 0; ind < rows.size(); ++ind) {
+	for (ui32 ind = 0; ind < size_m(); ++ind) {
 		support_rows[ind] = (~rows[ind] ^ col_j[ind]) & (rows[ind] | support_rows[ind]);
 		rows[ind] &= ~col_j[ind];
 		covered_rows[ind] |= col_j[ind];
 	}
 }
 
-void Dualizer_OPT::delete_zero_cols(const Bool_Vector& rows, Bool_Vector& cols) const throw() {
-	Bool_Vector buf;
-	buf.assign(static_cast<ui32*>(alloca(rows.size()*UI32_SIZE)), rows.bitsize());
+void Dualizer_OPT::delete_zero_cols(const ui32* rows, ui32* cols) const throw() {
+	ui32* buf = static_cast<ui32*>(alloca(size_m()*UI32_SIZE));
+	ui32 j = binary::find_next(cols, n(), 0);
 
-	for (ui32 j = cols.find_next(0); j < cols.bitsize(); j = cols.find_next(j + 1)) {
-		const Bool_Vector& col_j = L_t.row(j);
+	while (j < n()) {
+		const ui32* col_j = L_t.row(j);
 
-		for (ui32 ind = 0; ind < buf.size(); ++ind) {
+		for (ui32 ind = 0; ind < size_m(); ++ind) {
 			buf[ind] = rows[ind] & col_j[ind];
 		}
 
-		if (!buf.any())
-			cols.reset(j);
+		if (!binary::any(buf, m()))
+			binary::reset(cols, j);
+
+		j = binary::find_next(cols, n(), j + 1);
 	}
+
 }
 
-void Dualizer_OPT::delete_le_rows(Bool_Vector& rows, const Bool_Vector& cols) const throw() {
-	if (cols.popcount() == 0)
+void Dualizer_OPT::delete_le_rows(ui32* rows, const ui32* cols) const throw() {
+	if (binary::popcount(cols, n()) == 0)
 		return;
 
-	Bool_Vector buf;
-	buf.assign(static_cast<ui32*>(alloca(cols.size()*UI32_SIZE)), cols.bitsize());
+	ui32* buf = static_cast<ui32*>(alloca(size_n()*UI32_SIZE));
 
-	for (ui32 i1 = rows.find_next(0); i1 < rows.bitsize(); i1 = rows.find_next(i1 + 1)) {
-		const Bool_Vector& row1 = L.row(i1);
-		for (ui32 i2 = rows.find_next(0); i2 < rows.bitsize(); i2 = rows.find_next(i2 + 1)) {
-			if (i2 == i1)
-				continue;
-			const Bool_Vector& row2 = L.row(i2);
+	ui32 i1 = binary::find_next(rows, m(), 0);
+	ui32 i2 = 0;
 
-			for (ui32 ind = 0; ind < row1.size(); ++ind) {
-				buf[ind] = row1[ind] & ~row2[ind];
+	while (i1 < m()) {
+		const ui32* row1 = L.row(i1);
+		i2 = binary::find_next(rows, m(), 0);
+		while (i2 < m()) {
+			if (i2 != i1) {
+				const ui32* row2 = L.row(i2);
+
+				for (ui32 ind = 0; ind < size_n(); ++ind) {
+					buf[ind] = row1[ind] & ~row2[ind];
+				}
+
+				if (!binary::any(buf, n()))
+					binary::reset(rows, i2);
 			}
-
-			if (!buf.any())
-				rows.reset(i2);
+			i2 = binary::find_next(rows, m(), i2 + 1);
 		}
+		i1 = binary::find_next(rows, m(), i1 + 1);
 	}
+
 }
 
-void Dualizer_OPT::delete_fobidden_cols(const Bool_Vector& support_rows,
-	Bool_Vector& cols, const Covering& cov) const throw()
+void Dualizer_OPT::delete_fobidden_cols(const ui32* support_rows,
+	ui32* cols, const Covering& cov) const throw()
 {
-	Bool_Vector buf1;
-	buf1.assign(static_cast<ui32*>(alloca(support_rows.size()*UI32_SIZE)), support_rows.bitsize());
+	ui32* buf1 = static_cast<ui32*>(alloca(size_n()*UI32_SIZE));
+	ui32* buf2 = static_cast<ui32*>(alloca(size_n()*UI32_SIZE));
 
-	Bool_Vector buf2;
-	buf2.assign(static_cast<ui32*>(alloca(support_rows.size()*UI32_SIZE)), support_rows.bitsize());
+	ui32 u = 0;
+	ui32 j = 0;
 
-	for (ui32 u = 0; u < cov.size(); ++u) {
-		const Bool_Vector& col_u = L_t.row(cov[u]);
-
-		for (ui32 ind = 0; ind < support_rows.size(); ++ind) {
+	while (u < cov.size()) {
+		const ui32* col_u = L_t.row(cov[u]);
+		
+		for (ui32 ind = 0; ind < size_m(); ++ind) {
 			buf1[ind] = col_u[ind] & support_rows[ind];
 		}
 
-		for (ui32 j = cols.find_next(0); j < cols.bitsize(); j = cols.find_next(j + 1)) {
-			const Bool_Vector& col_j = L_t.row(j);
-
-			for (ui32 ind = 0; ind < support_rows.size(); ++ind) {
+		j = binary::find_next(cols, n(), 0);
+		while (j < n()) {
+			const ui32* col_j = L_t.row(j);
+			
+			for (ui32 ind = 0; ind < size_m(); ++ind) {
 				buf2[ind] = col_j[ind] | ~buf1[ind];
 			}
-			if (buf2.all()) {
-				cols.reset(j);
-			}
+
+			if (binary::all(buf2, m()))
+				binary::reset(cols, j);
+
+			j = binary::find_next(cols, n(), j + 1);
 		}
+		++u;
 	}
+
 }
 
 void Dualizer_OPT::run() {
 	Covering covering;
 	covering.reserve(20);
 
-	Bool_Vector rows;
-	rows.reserve(L.height());
-	rows.setall();
+	ui32* rows = static_cast<ui32*>(My_Memory::MM_malloc(size_m()*UI32_SIZE));
+	My_Memory::MM_memset(rows, ~0, size_m()*UI32_SIZE);
 
-	Bool_Vector cols;
-	cols.reserve(L.width());
-	cols.setall();
-	
-	Bool_Vector support_rows;
-	support_rows.reserve(L.width());
-	support_rows.resetall();
+	ui32* support_rows = static_cast<ui32*>(My_Memory::MM_malloc(size_m()*UI32_SIZE));
+	My_Memory::MM_memset(support_rows, 0, size_m()*UI32_SIZE);
 
-	Bool_Vector covered_rows;
-	covered_rows.reserve(L.height());
-	covered_rows.resetall();
+	ui32* covered_rows = static_cast<ui32*>(My_Memory::MM_malloc(size_m()*UI32_SIZE));
+	My_Memory::MM_memset(covered_rows, 0, size_m()*UI32_SIZE);
 
-	Stack stack;
+	ui32* cols = static_cast<ui32*>(My_Memory::MM_malloc(size_n()*UI32_SIZE));
+	My_Memory::MM_memset(cols, ~0, size_n()*UI32_SIZE);
+
+	Stack stack(m(), n());
 	stack.push(rows, cols, support_rows, covered_rows, 0, 0);
 
 	ui32 h = 0;
@@ -169,10 +198,9 @@ void Dualizer_OPT::run() {
 	while (!stack.empty()) {		
 		if (!up_to_date)
 			stack.copy_top(rows, cols, support_rows, covered_rows, h, j);
-		ui32 j0 = j;
-		j = cols.find_next(j0);
+		j = binary::find_next(cols, n(), j);
 
-		if (j >= cols.bitsize()) {
+		if (j >= n()) {
 			//all children are finished
 			stack.pop();
 			if (stack.size() > 0) {
@@ -182,14 +210,14 @@ void Dualizer_OPT::run() {
 			continue;
 		}
 
-		stack.top().j_next = j + 1;
-		cols.resetupto(j);		
+		stack.top_j_next() = j + 1;
+		binary::reset_le(cols, j);
 		covering.append(j);
 		update_covered_and_support_rows(rows, covered_rows, support_rows, L_t.row(j));
 
-		if (!rows.any()) {
+		if (!binary::any(rows, m())) {
 			//leaf, it might be false positive
-			if (covered_rows.all()) {
+			if (binary::all(covered_rows, m())) {
 				//irreducible covering (true positive)
 				covering.print(p_file);
 				++n_coverings;
@@ -204,13 +232,19 @@ void Dualizer_OPT::run() {
 		delete_zero_cols(rows, cols);
 
 		stack.push(rows, cols, support_rows, covered_rows, j, 0);
+		j = 0;
 		up_to_date = true;
 	}
 
 	printf("Irreducible coverings: %d\n", n_coverings);
+
+	My_Memory::MM_free(rows);
+	My_Memory::MM_free(support_rows);
+	My_Memory::MM_free(covered_rows);
+	My_Memory::MM_free(cols);
 }
 
-void Dualizer_OPT::init(const Bool_Matrix& L0, const char* file_name, const char* mode) {
+void Dualizer_OPT::init(const binary::Matrix& L0, const char* file_name, const char* mode) {
 	if (file_name != nullptr) {
 		p_file = fopen(file_name, mode);
 		if (p_file == nullptr) {
@@ -219,17 +253,18 @@ void Dualizer_OPT::init(const Bool_Matrix& L0, const char* file_name, const char
 	}
 	L = L0;
 
-	Bool_Vector rows;
-	rows.reserve(L.height());
-	rows.setall();
+	ui32* rows = static_cast<ui32*>(My_Memory::MM_malloc(size_m()*UI32_SIZE));
+	My_Memory::MM_memset(rows, ~0, size_m()*UI32_SIZE);
 
-	Bool_Vector cols;
-	cols.reserve(L.width());
-	cols.setall();
+	ui32* cols = static_cast<ui32*>(My_Memory::MM_malloc(size_n()*UI32_SIZE));
+	My_Memory::MM_memset(cols, ~0, size_n()*UI32_SIZE);
 
 	delete_le_rows(rows, cols);
 	L.submatrix(rows);
 	L_t.transpose(L);
+
+	My_Memory::MM_free(rows);
+	My_Memory::MM_free(cols);
 }
 
 void Dualizer_OPT::clear() {

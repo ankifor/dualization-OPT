@@ -1,64 +1,152 @@
-//#include <memory.h>//for memset, memcpy
-#include <intrin.h>//for _bittest, _bittestandset, _bittestandreset
+#include <intrin.h>//for _bittest, _bittestandset, _bittestandreset, _tzcnt_u32, __popcnt
 #include <cstdio>//for fgetc, EOF, fopen, fclose, fputc
 #include <stdexcept>//for runtime_error
-#include <time.h>//for time()
-#include <cstdlib>//for rand
-#include <algorithm>//for std::swap
+//#include <time.h>//for time()
+//#include <cstdlib>//for rand
+//#include <algorithm>//for std::swap
 
-#include "bool_matrix.h"
+#include "binary.h"
 #include "my_memory.h"
 
 using namespace std;
+
+
+ui32 binary::popcount(const ui32* p, ui32 bitsize) {
+		assert(bitsize > 0);
+		ui32 sum = 0;
+		ui32 sz = size(bitsize);
+		ui32 buf = p[sz - 1];
+
+		const_cast<ui32*>(p)[sz - 1] &= mask(bitsize);
+
+		for (ui32 ind = 0; ind < sz; ++ind) {
+			sum += __popcnt(p[ind]);
+		}
+
+		const_cast<ui32*>(p)[sz - 1] = buf;
+		return sum;
+}
+
+ui32 binary::find_next(const ui32* p, ui32 bitsize, ui32 bit) {
+		assert(bitsize > 0);
+
+		ui32 ind = bit >> UI32_LOG2BIT;
+		ui32 offset = bit & UI32_MASK;
+		ui32 buf = (p[ind] >> offset) << offset;
+		ui32 sz = size(bitsize);
+	
+		while (ind < sz) {
+			offset = _tzcnt_u32(buf);//UI32_BITS==32
+			if (offset == UI32_BITS) {
+				++ind;
+				buf = p[ind];
+			} else {
+				break;
+			}
+		}
+		return (ind << UI32_LOG2BIT) + offset;
+
+}
+
+bool binary::any(const ui32* p, ui32 bitsize) {
+	assert(bitsize > 0);
+	bool res = false;
+	ui32 sz = size(bitsize);
+
+	ui32 buf = p[sz - 1];
+	const_cast<ui32*>(p)[sz - 1] &= mask(bitsize);
+		
+	res = 
+		(*p != 0) || 
+		(My_Memory::MM_memcmp(p, p + 1, UI32_SIZE*(sz - 1)) != 0);
+	
+	const_cast<ui32*>(p)[sz - 1] = buf;
+	return res;
+}
+
+bool binary::all(const ui32* p, ui32 bitsize) {
+	assert(bitsize > 0);
+	bool res = false;
+	ui32 sz = size(bitsize);
+
+	ui32 buf = p[sz - 1];
+	const_cast<ui32*>(p)[sz - 1] |= ~mask(bitsize);
+
+	res =
+		(*p != ~0) ||
+		(My_Memory::MM_memcmp(p, p + 1, UI32_SIZE*(sz - 1)) != 0);
+
+	const_cast<ui32*>(p)[sz - 1] = buf;
+	return !res;
+}
+
+void binary::set(ui32* p, ui32 bit) {
+	ui32 ind = (bit >> UI32_LOG2BIT);
+	_bittestandset(reinterpret_cast<long*>(p + ind), bit & UI32_MASK);
+}
+
+void binary::reset(ui32* p, ui32 bit) {
+	ui32 ind = (bit >> UI32_LOG2BIT);
+	_bittestandreset(reinterpret_cast<long*>(p + ind), bit & UI32_MASK);
+}
+
+void binary::reset_le(ui32* p, ui32 bit) {
+	ui32 k = (bit + 1) >> UI32_LOG2BIT;
+	My_Memory::MM_memset(p, 0, k*UI32_SIZE);
+	ui32 offset = (bit + 1) & UI32_MASK;
+	ui32 mask = UI32_ALL << offset;
+	p[k] &= mask;
+}
+
 
 /**********************************************************
 taking and changing elements
 **********************************************************/
 
-char Bool_Matrix::at(ui32 i, ui32 j) const {
+char binary::Matrix::at(ui32 i, ui32 j) const {
 	ui32 ind = i*row_size() + (j >> UI32_LOG2BIT);
 	return _bittest(reinterpret_cast<const long*>(data_+ind), j & UI32_MASK);
 }
 
-void Bool_Matrix::set(ui32 i, ui32 j) {
+void binary::Matrix::set(ui32 i, ui32 j) {
 	ui32 ind = i*row_size() + (j >> UI32_LOG2BIT);
 	_bittestandset(reinterpret_cast<long*>(data_ + ind), j & UI32_MASK);
 }
 
-void Bool_Matrix::reset(ui32 i, ui32 j) {
+void binary::Matrix::reset(ui32 i, ui32 j) {
 	ui32 ind = i*row_size() + (j >> UI32_LOG2BIT);
 	_bittestandreset(reinterpret_cast<long*>(data_ + ind), j & UI32_MASK);
 }
 
-Bool_Vector Bool_Matrix::row(ui32 i) {
-	return Bool_Vector(&data_[i*row_size()], width());
+ui32* binary::Matrix::row(ui32 i) {
+	return &data_[i*row_size()];
 }
 
-const Bool_Vector Bool_Matrix::row(ui32 i) const {
-	return Bool_Vector(&data_[i*row_size()], width());
+const ui32* binary::Matrix::row(ui32 i) const {
+	return &data_[i*row_size()];
 }
 
 /**********************************************************
 service functions
 **********************************************************/
 
-void Bool_Matrix::copy(const Bool_Matrix& src) {
+void binary::Matrix::copy(const Matrix& src) {
 	if (this != &src) {
 		reserve(src.m_, src.n_);
 		My_Memory::MM_memcpy(data_, src.data_, m_*row_size()*UI32_SIZE);
 	}
 }
 
-void Bool_Matrix::swap(Bool_Matrix& src) {
-	if (this != &src) {
-		std::swap(m_, src.m_);
-		std::swap(n_, src.n_);
-		std::swap(data_, src.data_);
-		std::swap(capacity_, src.capacity_);
-	}
-}
+//void binary::Matrix::swap(Matrix& src) {
+//	if (this != &src) {
+//		std::swap(m_, src.m_);
+//		std::swap(n_, src.n_);
+//		std::swap(data_, src.data_);
+//		std::swap(capacity_, src.capacity_);
+//	}
+//}
 
-void Bool_Matrix::transpose(const Bool_Matrix& src) {
+void binary::Matrix::transpose(const Matrix& src) {
 	reserve(src.n_, src.m_);
 	My_Memory::MM_memset(data_, 0, m_*row_size()*UI32_SIZE);
 	for (ui32 i = 0; i < src.m_; ++i) {
@@ -69,15 +157,21 @@ void Bool_Matrix::transpose(const Bool_Matrix& src) {
 	}
 }
 
-void Bool_Matrix::submatrix(const Bool_Vector& rows) {
-	reserve(rows.popcount(), n_);
-	for (ui32 j = rows.find_next(0), k = 0; j < rows.bitsize(); j = rows.find_next(j + 1), ++k) {
-		if (k != j)
-			My_Memory::MM_memcpy(&data_[k*row_size()], &data_[j*row_size()], row_size()*UI32_SIZE);
+void binary::Matrix::submatrix(const ui32* rows) {
+	ui32 m = m_;
+	reserve(popcount(rows, m_), n_);
+	//m_ changed... So use m
+	ui32 i = find_next(rows, m, 0);
+	ui32 k = 0;
+	while (i < m) {
+		if (k != i)
+			My_Memory::MM_memcpy(row(k), row(i), row_size()*UI32_SIZE);
+		i = find_next(rows, m, i + 1);
+		++k;
 	}
 }
 
-void Bool_Matrix::reserve(ui32 m, ui32 n) {
+void binary::Matrix::reserve(ui32 m, ui32 n) {
 	ui32 row_sz = size_from_bitsize(n);
 	ui32 sz = m*row_sz;
 	if (sz == 0) {//deallocate memory
@@ -97,20 +191,20 @@ void Bool_Matrix::reserve(ui32 m, ui32 n) {
 	n_ = n;
 }
 
-void Bool_Matrix::random(ui32 m, ui32 n, float d, unsigned seed) {
-	reserve(m,n);
-	My_Memory::MM_memset(data_, 0, m*row_size()*UI32_SIZE);
-	ui32 threshold = ui32(RAND_MAX * d);
-	if (seed == 0)
-		seed = static_cast<unsigned>(time(nullptr));
-	srand(seed);	
-	for (ui32 i = 0; i < m_; ++i) {
-		for (ui32 j = 0; j < n_; ++j) {
-			if (static_cast<ui32>(rand()) < threshold)
-				set(i, j);
-		}      
-	}
-}
+//void binary::Matrix::random(ui32 m, ui32 n, float d, unsigned seed) {
+//	reserve(m,n);
+//	My_Memory::MM_memset(data_, 0, m*row_size()*UI32_SIZE);
+//	ui32 threshold = ui32(RAND_MAX * d);
+//	if (seed == 0)
+//		seed = static_cast<unsigned>(time(nullptr));
+//	srand(seed);	
+//	for (ui32 i = 0; i < m_; ++i) {
+//		for (ui32 j = 0; j < n_; ++j) {
+//			if (static_cast<ui32>(rand()) < threshold)
+//				set(i, j);
+//		}      
+//	}
+//}
 
 /**********************************************************
 io functions
@@ -180,7 +274,7 @@ static char skip_space(FILE* p_file) {
 	return ch;
 }
 
-void Bool_Matrix::read(FILE* p_file) {
+void binary::Matrix::read(FILE* p_file) {
 	ui32 m = 0;
 	ui32 n = 0;
 	read_get_width_and_check(p_file, m, n);
@@ -195,10 +289,10 @@ void Bool_Matrix::read(FILE* p_file) {
 
 }
 
-void Bool_Matrix::read(const char* file_name) {
+void binary::Matrix::read(const char* file_name) {
 	FILE* p_file = fopen(file_name, "r");
 	if (p_file == nullptr) {
-		throw std::runtime_error(string("Bool_Matrix::read::") + std::strerror(errno));
+		throw std::runtime_error(string("binary::Matrix::read::") + std::strerror(errno));
 	}
 	try {
 		read(p_file);
@@ -219,7 +313,7 @@ void Bool_Matrix::read(const char* file_name) {
 //	}
 //}
 
-void Bool_Matrix::print(FILE* p_file) const {
+void binary::Matrix::print(FILE* p_file) const {
 	for (ui32 i = 0; i < m_; ++i) {
 		for (ui32 j = 0; j < n_; ++j) {
 			fputc((at(i, j) != 0) + '0', p_file);
@@ -228,13 +322,13 @@ void Bool_Matrix::print(FILE* p_file) const {
 		fputc('\n', p_file);
 	}
 	if (ferror(p_file))
-		throw std::runtime_error(string("Bool_Matrix::print::") + std::strerror(errno));
+		throw std::runtime_error(string("binary::Matrix::print::") + std::strerror(errno));
 }
 
-void Bool_Matrix::print(const char* file_name, const char* mode) const {
+void binary::Matrix::print(const char* file_name, const char* mode) const {
 	FILE* p_file = fopen(file_name, mode);
 	if (p_file == nullptr) {
-		throw std::runtime_error(string("Bool_Matrix::print::") + std::strerror(errno));
+		throw std::runtime_error(string("binary::Matrix::print::") + std::strerror(errno));
 	}
 	try {
 		print(p_file);
