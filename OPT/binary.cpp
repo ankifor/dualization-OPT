@@ -50,34 +50,38 @@ ui32 binary::find_next(const ui32* p, ui32 bitsize, ui32 bit) {
 
 bool binary::any(const ui32* p, ui32 bitsize) {
 	assert(bitsize > 0);
-	bool res = false;
+	
 	ui32 sz = size(bitsize);
 
 	ui32 buf = p[sz - 1];
 	const_cast<ui32*>(p)[sz - 1] &= mask(bitsize);
 		
-	res = 
-		(*p != 0) || 
-		(My_Memory::MM_memcmp(p, p + 1, UI32_SIZE*(sz - 1)) != 0);
-	
+	//res = 
+	//	(*p != 0) || 
+	//	(My_Memory::MM_memcmp(p, p + 1, UI32_SIZE*(sz - 1)) != 0);
+	ui32 res = 0;
+	for (ui32 ind = 0; ind < sz; ++ind) {
+		res |= p[ind];
+	}	
 	const_cast<ui32*>(p)[sz - 1] = buf;
-	return res;
+	return res != 0;
 }
 
 bool binary::all(const ui32* p, ui32 bitsize) {
 	assert(bitsize > 0);
-	bool res = false;
+
 	ui32 sz = size(bitsize);
 
 	ui32 buf = p[sz - 1];
 	const_cast<ui32*>(p)[sz - 1] |= ~mask(bitsize);
 
-	res =
-		(*p != ~0) ||
-		(My_Memory::MM_memcmp(p, p + 1, UI32_SIZE*(sz - 1)) != 0);
+	ui32 res = UI32_ALL;
+	for (ui32 ind = 0; ind < sz; ++ind) {
+		res &= p[ind];
+	}
 
 	const_cast<ui32*>(p)[sz - 1] = buf;
-	return !res;
+	return res == UI32_ALL;
 }
 
 void binary::set(ui32* p, ui32 bit) {
@@ -172,7 +176,7 @@ void binary::Matrix::submatrix(const ui32* rows) {
 }
 
 void binary::Matrix::reserve(ui32 m, ui32 n) {
-	ui32 row_sz = size_from_bitsize(n);
+	ui32 row_sz = size(n);
 	ui32 sz = m*row_sz;
 	if (sz == 0) {//deallocate memory
 		if (capacity_ > 0)
@@ -324,6 +328,18 @@ void binary::Matrix::print(FILE* p_file) const {
 	if (ferror(p_file))
 		throw std::runtime_error(string("binary::Matrix::print::") + std::strerror(errno));
 }
+
+void binary::Matrix::print0x(FILE* p_file) const {
+	for (ui32 i = 0; i < m_; ++i) {
+		for (ui32 ind = 0; ind < size(n_); ++ind) {
+			fprintf(p_file, "%08x ", data_[i*row_size() + ind]);
+		}
+		fputc('\n', p_file);
+	}
+	if (ferror(p_file))
+		throw std::runtime_error(string("binary::Matrix::print::") + std::strerror(errno));
+}
+
 
 void binary::Matrix::print(const char* file_name, const char* mode) const {
 	FILE* p_file = fopen(file_name, mode);

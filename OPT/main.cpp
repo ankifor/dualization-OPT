@@ -39,7 +39,7 @@ void main(int argc, char** argv) {
 		double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
 		cout << "Elapsed time: " << elapsed_secs << endl;
 #else
-		L.read("mat1.txt");
+		L.read("mat.txt");
 		solver.init(L, "res.txt");
 		solver.run();
 #endif

@@ -1,6 +1,7 @@
 #pragma once
 
 typedef unsigned int ui32;
+//typedef unsigned long long ui64;
 
 #define UI32_BITS ui32(32)
 #define UI32_LOG2BIT ui32(5)

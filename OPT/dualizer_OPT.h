@@ -92,13 +92,13 @@ private:
 	Dualizer_OPT(Dualizer_OPT const&) {};
 	void operator = (Dualizer_OPT const&) {};
 
-	ui32 m() const throw() { return L.height(); }
-	ui32 size_m() const throw() { return binary::size(m()); }
-	ui32 mask_m() const throw() { return binary::mask(m()); }
+	inline ui32 m() const throw() { return L.height(); }
+	inline ui32 size_m() const throw() { return binary::size(m()); }
+	inline ui32 mask_m() const throw() { return binary::mask(m()); }
 
-	ui32 n() const throw() { return L.width(); }
-	ui32 size_n() const throw() { return binary::size(n()); }
-	ui32 mask_n() const throw() { return binary::mask(n()); }
+	inline ui32 n() const throw() { return L.width(); }
+	inline ui32 size_n() const throw() { return binary::size(n()); }
+	inline ui32 mask_n() const throw() { return binary::mask(n()); }
 
 private:
 

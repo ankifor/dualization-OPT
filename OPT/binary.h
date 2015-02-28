@@ -28,9 +28,9 @@ namespace binary {
 		const ui32* row(ui32 i) const throw();
 
 		//stats
-		ui32 row_size() const { return size_from_bitsize(n_); }
-		ui32 width() const { return n_; }
-		ui32 height() const { return m_; }
+		inline ui32 row_size() const { return size(n_); }
+		inline ui32 width() const { return n_; }
+		inline ui32 height() const { return m_; }
 
 		//service functions
 		void copy(const Matrix& src);
@@ -50,12 +50,12 @@ namespace binary {
 		void read(FILE* pFile);
 		void read(const char* file_name);
 		void print(FILE* pFile) const;
+		void print0x(FILE* pFile) const;
 		void print(const char* file_name, const char* mode = "w") const;
 		
 
 	protected:
 		void reserve(ui32 m, ui32 n);
-		static ui32 size_from_bitsize(ui32 bitsz) throw() { return (bitsz + UI32_BITS - 1) >> UI32_LOG2BIT; }
 	protected:
 		ui32* data_;
 		ui32 n_;//matrix width
