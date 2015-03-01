@@ -119,7 +119,6 @@ void Dualizer_OPT::delete_fobidden_cols(const ui32* support_rows,
 	while (u < cov.size()) {
 		const ui32* col_u = matrix_t_ + cov[u] * size_m();
 
-
 		j = binary::find_next(cols, n(), 0);
 		while (j < n()) {
 			const ui32* col_j = matrix_t_ + j * size_m();
@@ -158,6 +157,9 @@ void Dualizer_OPT::run() {
 	Covering covering;
 	covering.reserve(20);
 
+	//current tree node may be described by 5 variables:
+	//rows, cols, support_rows, covered_rows
+	//they are stored in variable pool for efficiency
 	ui32* const pool = static_cast<ui32*>(My_Memory::MM_malloc((3*size_m()+size_n()+1)*UI32_SIZE));
 	ui32* dst = pool;
 
@@ -170,18 +172,22 @@ void Dualizer_OPT::run() {
 	ui32* covered_rows = dst; dst += size_m();
 	ui32& j = *dst; dst += 1;
 	
+	//stack stores the whole tree node
 	Stack stack(3*size_m() + size_n() + 1, 16);
 	stack.push(pool);
 
+	//helps to avoid double copying
 	bool up_to_date = true;
 
+	//in-depth tree search
 	while (!stack.empty()) {		
 		if (!up_to_date)
 			stack.copy_top(pool);
 		j = binary::find_next(cols, n(), j);
 
+		//any children left?
 		if (j >= n()) {
-			//all children are finished
+			//all children are finished, go up
 			stack.pop();
 			if (stack.size() > 0) {
 				covering.remove_last();
@@ -192,23 +198,28 @@ void Dualizer_OPT::run() {
 
 		binary::reset_le(cols, j);
 		covering.append(j);
+
 		update_covered_and_support_rows(rows, covered_rows, support_rows, j);
 
 		++j;
+		//modify last processed child number
 		stack.update_j_next(j, &j - pool);
 
+		//leaf?
 		if (!binary::any(rows, m())) {
-			//leaf, it might be false positive
+			//false positive?
 			if (binary::all(covered_rows, m())) {
 				//irreducible covering (true positive)
 				covering.print(p_file);
 				++n_coverings;
 			}
+			//go up in the tree
 			covering.remove_last();
 			up_to_date = false;
 			continue;
 		}
 
+		//prepare child
 		delete_fobidden_cols(support_rows, cols, covering);
 		delete_le_rows(rows, cols);
 		delete_zero_cols(rows, cols);
