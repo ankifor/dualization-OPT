@@ -5,6 +5,7 @@
 
 #include "dualizer_OPT.h"
 #include "my_memory.h"
+#include "pool_stack.h"
 
 
 
@@ -13,61 +14,38 @@ using namespace std;
 
 class Stack {
 public:
-	struct Element {
-		ui32* p;
-		Element() : p(nullptr) {}
-		~Element() { 
-			if (p != nullptr) {
-				My_Memory::MM_free(p);
-				p = nullptr;
-			}
-		}
-	};
 	
-	void push(const ui32* pool, ui32 h_last, ui32 j_next) {
-		data_.push_empty();
-		
-		if (data_.top().p == nullptr) {
-			data_.top().p = static_cast<ui32*>(My_Memory::MM_malloc(element_size_ * UI32_SIZE));
-		}
-		
-		ui32* dst = data_.top().p;
-		My_Memory::MM_memcpy(dst, pool, pool_size_ * UI32_SIZE); dst += pool_size_;
-		*dst = h_last; dst += 1;
-		*dst = j_next;
+	void push(const ui32* pool) {
+		assert(pool != nullptr);
+		pool_stack_.push_empty();
+		My_Memory::MM_memcpy(pool_stack_.top(), pool, pool_stack_.element_size() * UI32_SIZE);
 	}
 
-	void update_j_next(ui32 j_next) { 	
-		ui32* dst = data_.top().p + pool_size_ + 1;
-		*dst = j_next;
+	inline void update_j_next(ui32 j_next, ui32 offset) { 	
+		*(pool_stack_.top() + offset) = j_next;
 	}
 
-	void pop() throw() { data_.pop(); }
-
-	void copy_top(ui32* pool, ui32& h_last, ui32& j_next) throw() {
-		ui32* src = data_.top().p;
-		My_Memory::MM_memcpy(pool, src, pool_size_ * UI32_SIZE); src += pool_size_;
-		h_last = *src; src += 1;
-		j_next = *src;
+	inline void pop() throw() { 
+		pool_stack_.pop(); 
 	}
 
+	inline void copy_top(ui32* pool) throw() {
+		assert(pool != nullptr);
+		My_Memory::MM_memcpy(pool, pool_stack_.top(), pool_stack_.element_size() * UI32_SIZE);
+	}
 
-	bool empty() const throw() { return  data_.size() == 0; }
+	inline bool empty() const throw() { return  pool_stack_.size() == 0; }
 
-	int size() const throw() { return data_.size(); }
+	inline int size() const throw() { return pool_stack_.size(); }
 
-	Stack(ui32 pool_size, ui32 size = 16) { 
-		data_.reserve(size); 
-		element_size_ = pool_size + 2;
-		pool_size_ = pool_size;
+	Stack(ui32 pool_size, ui32 size = 16) : pool_stack_(pool_size) {
+		pool_stack_.reserve(size);
 	}
 
 	~Stack() {}
 private:
 
-	Stack_Array<Element> data_;
-	ui32 pool_size_;
-	ui32 element_size_;
+	Pool_Stack pool_stack_;
 };
 
 void Dualizer_OPT::update_covered_and_support_rows(ui32* rows, ui32* covered_rows,
@@ -179,32 +157,26 @@ void Dualizer_OPT::run() {
 	Covering covering;
 	covering.reserve(20);
 
-	ui32* pool = static_cast<ui32*>(My_Memory::MM_malloc((3*size_m()+size_n())*UI32_SIZE));
+	ui32* const pool = static_cast<ui32*>(My_Memory::MM_malloc((3*size_m()+size_n()+1)*UI32_SIZE));
 	ui32* dst = pool;
 
 	My_Memory::MM_memset(dst, ~0, (size_n() + size_m())*UI32_SIZE);
 	ui32* rows         = dst; dst += size_m();
 	ui32* cols         = dst; dst += size_n();
 
-	My_Memory::MM_memset(dst, 0, 2 * size_m()*UI32_SIZE);
+	My_Memory::MM_memset(dst,  0, (2 * size_m() + 1)*UI32_SIZE);
 	ui32* support_rows = dst; dst += size_m();
 	ui32* covered_rows = dst; dst += size_m();
-
-	//My_Memory::MM_memset(rows, ~0, size_m()*UI32_SIZE);
-	//My_Memory::MM_memset(cols, ~0, size_n()*UI32_SIZE);
-	//My_Memory::MM_memset(support_rows, 0, size_m()*UI32_SIZE);
-	//My_Memory::MM_memset(covered_rows, 0, size_m()*UI32_SIZE);
+	ui32& j = *dst; dst += 1;
 	
-	Stack stack(3*size_m() + size_n(), 16);
-	stack.push(pool, 0, 0);
+	Stack stack(3*size_m() + size_n() + 1, 16);
+	stack.push(pool);
 
-	ui32 h = 0;
-	ui32 j = 0;
 	bool up_to_date = true;
 
 	while (!stack.empty()) {		
 		if (!up_to_date)
-			stack.copy_top(pool, h, j);
+			stack.copy_top(pool);
 		j = binary::find_next(cols, n(), j);
 
 		if (j >= n()) {
@@ -217,10 +189,13 @@ void Dualizer_OPT::run() {
 			continue;
 		}
 
-		stack.update_j_next(j+1);
+		
 		binary::reset_le(cols, j);
 		covering.append(j);
 		update_covered_and_support_rows(rows, covered_rows, support_rows, L_t.row(j));
+
+		++j;
+		stack.update_j_next(j, &j - pool);
 
 		if (!binary::any(rows, m())) {
 			//leaf, it might be false positive
@@ -238,8 +213,7 @@ void Dualizer_OPT::run() {
 		delete_le_rows(rows, cols);
 		delete_zero_cols(rows, cols);
 
-		stack.push(pool, j, 0);
-		j = 0;
+		stack.push(pool);
 		up_to_date = true;
 	}
 
@@ -257,13 +231,12 @@ void Dualizer_OPT::init(const binary::Matrix& L0, const char* file_name, const c
 	}
 	L = L0;
 
-	ui32* pool = static_cast<ui32*>(My_Memory::MM_malloc((size_m() + size_n())*UI32_SIZE));
+	ui32* const pool = static_cast<ui32*>(My_Memory::MM_malloc((size_m() + size_n())*UI32_SIZE));
 	ui32* dst = pool;
 
+	My_Memory::MM_memset(dst, ~0, (size_n() + size_m())*UI32_SIZE);
 	ui32* rows = dst; dst += size_m();
 	ui32* cols = dst; dst += size_n();
-
-	My_Memory::MM_memset(rows, ~0, (size_n() + size_m())*UI32_SIZE);
 
 	delete_le_rows(rows, cols);
 	L.submatrix(rows);
