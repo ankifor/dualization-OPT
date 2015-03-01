@@ -68,17 +68,24 @@ protected:
 
 public:
 
-	Dualizer_OPT() throw() : p_file(nullptr), n_coverings(0) {}
+	Dualizer_OPT() : 
+		matrix_    (nullptr),
+		matrix_t_  (nullptr),
+		m_         (0      ),
+		n_         (0      ),
+		n_coverings(0      ),
+		p_file     (nullptr)
+	{}
 	~Dualizer_OPT() throw() { clear(); }
 
-	void init(const binary::Matrix& L0, const char* file_name = nullptr, const char* mode = "w");
+	void init(const binary::Matrix& L, const char* file_name = nullptr, const char* mode = "w");
 	void clear() throw();
 	void run();
 
 protected:
 
 	void update_covered_and_support_rows(ui32* rows, ui32* covered_rows,
-		ui32* support_rows, const ui32* col_j) const throw();
+		ui32* support_rows, ui32 j) const throw();
 
 	void delete_zero_cols(const ui32* rows, ui32* cols) const throw();
 	
@@ -92,19 +99,20 @@ private:
 	Dualizer_OPT(Dualizer_OPT const&) {};
 	void operator = (Dualizer_OPT const&) {};
 
-	inline ui32 m() const throw() { return L.height(); }
-	inline ui32 size_m() const throw() { return binary::size(m()); }
-	inline ui32 mask_m() const throw() { return binary::mask(m()); }
+	inline ui32 m() const throw() { return m_; }
+	inline ui32 size_m() const throw() { return binary::size(m_); }
+	inline ui32 mask_m() const throw() { return binary::mask(m_); }
 
-	inline ui32 n() const throw() { return L.width(); }
-	inline ui32 size_n() const throw() { return binary::size(n()); }
-	inline ui32 mask_n() const throw() { return binary::mask(n()); }
+	inline ui32 n() const throw() { return n_; }
+	inline ui32 size_n() const throw() { return binary::size(n_); }
+	inline ui32 mask_n() const throw() { return binary::mask(n_); }
 
 private:
 
-	binary::Matrix L;
-	binary::Matrix L_t;
-
+	ui32* matrix_;
+	ui32* matrix_t_;
+	ui32 m_;
+	ui32 n_;
 	ui32 n_coverings;
 	FILE* p_file;
 };

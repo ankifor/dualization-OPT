@@ -50,19 +50,19 @@ ui32 binary::find_next(const ui32* p, ui32 bitsize, ui32 bit) {
 
 bool binary::any(const ui32* p, ui32 bitsize) {
 	assert(bitsize > 0);
-	
+
 	ui32 sz = size(bitsize);
 
 	ui32 buf = p[sz - 1];
 	const_cast<ui32*>(p)[sz - 1] &= mask(bitsize);
-		
+
 	//res = 
 	//	(*p != 0) || 
 	//	(My_Memory::MM_memcmp(p, p + 1, UI32_SIZE*(sz - 1)) != 0);
 	ui32 res = 0;
 	for (ui32 ind = 0; ind < sz; ++ind) {
 		res |= p[ind];
-	}	
+	}
 	const_cast<ui32*>(p)[sz - 1] = buf;
 	return res != 0;
 }
@@ -94,6 +94,11 @@ void binary::reset(ui32* p, ui32 bit) {
 	_bittestandreset(reinterpret_cast<long*>(p + ind), bit & UI32_MASK);
 }
 
+char binary::at(const ui32* p, ui32 bit) {
+	ui32 ind = bit >> UI32_LOG2BIT;
+	return _bittest(reinterpret_cast<const long*>(p + ind), bit & UI32_MASK);
+}
+
 void binary::reset_le(ui32* p, ui32 bit) {
 	ui32 k = (bit + 1) >> UI32_LOG2BIT;
 	My_Memory::MM_memset(p, 0, k*UI32_SIZE);
@@ -102,32 +107,35 @@ void binary::reset_le(ui32* p, ui32 bit) {
 	p[k] &= mask;
 }
 
+ui32* binary::transpose(const ui32* src, ui32 m, ui32 n) {
+	ui32 size_byte = size(m) * n * UI32_SIZE;
+	ui32* dst = static_cast<ui32*>(My_Memory::MM_malloc(size_byte));
+	My_Memory::MM_memset(dst, 0, size_byte);
 
-/**********************************************************
-taking and changing elements
-**********************************************************/
+	for (ui32 i = 0; i < m; ++i) {
+		for (ui32 j = 0; j < n; ++j) {
+			if (at(src + i * size(n), j))
+				set(dst + j * size(m), i);
+		}
+	}
 
-char binary::Matrix::at(ui32 i, ui32 j) const {
-	ui32 ind = i*row_size() + (j >> UI32_LOG2BIT);
-	return _bittest(reinterpret_cast<const long*>(data_+ind), j & UI32_MASK);
+	return dst;
 }
 
-void binary::Matrix::set(ui32 i, ui32 j) {
-	ui32 ind = i*row_size() + (j >> UI32_LOG2BIT);
-	_bittestandset(reinterpret_cast<long*>(data_ + ind), j & UI32_MASK);
-}
+ui32* binary::submatrix(const ui32* src, const ui32* rows, ui32& m, const ui32& n) {
+	ui32 m_new = popcount(rows, m);
+	ui32* res = static_cast<ui32*>(My_Memory::MM_malloc(m_new * size(n) * UI32_SIZE));
+	
+	ui32 i = find_next(rows, m, 0);	
+	ui32* dst = res;
+	while (i < m) {		
+		My_Memory::MM_memcpy(dst, src + i*size(n), size(n)*UI32_SIZE);
+		dst += size(n);
+		i = find_next(rows, m, i + 1);
+	}
 
-void binary::Matrix::reset(ui32 i, ui32 j) {
-	ui32 ind = i*row_size() + (j >> UI32_LOG2BIT);
-	_bittestandreset(reinterpret_cast<long*>(data_ + ind), j & UI32_MASK);
-}
-
-ui32* binary::Matrix::row(ui32 i) {
-	return &data_[i*row_size()];
-}
-
-const ui32* binary::Matrix::row(ui32 i) const {
-	return &data_[i*row_size()];
+	m = m_new;
+	return res;
 }
 
 /**********************************************************
@@ -149,31 +157,6 @@ void binary::Matrix::copy(const Matrix& src) {
 //		std::swap(capacity_, src.capacity_);
 //	}
 //}
-
-void binary::Matrix::transpose(const Matrix& src) {
-	reserve(src.n_, src.m_);
-	My_Memory::MM_memset(data_, 0, m_*row_size()*UI32_SIZE);
-	for (ui32 i = 0; i < src.m_; ++i) {
-		for (ui32 j = 0; j < src.n_; ++j) {
-			if (src.at(i, j))
-				set(j, i);
-		}
-	}
-}
-
-void binary::Matrix::submatrix(const ui32* rows) {
-	ui32 m = m_;
-	reserve(popcount(rows, m_), n_);
-	//m_ changed... So use m
-	ui32 i = find_next(rows, m, 0);
-	ui32 k = 0;
-	while (i < m) {
-		if (k != i)
-			My_Memory::MM_memcpy(row(k), row(i), row_size()*UI32_SIZE);
-		i = find_next(rows, m, i + 1);
-		++k;
-	}
-}
 
 void binary::Matrix::reserve(ui32 m, ui32 n) {
 	ui32 row_sz = size(n);
@@ -339,7 +322,6 @@ void binary::Matrix::print0x(FILE* p_file) const {
 	if (ferror(p_file))
 		throw std::runtime_error(string("binary::Matrix::print::") + std::strerror(errno));
 }
-
 
 void binary::Matrix::print(const char* file_name, const char* mode) const {
 	FILE* p_file = fopen(file_name, mode);

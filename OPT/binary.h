@@ -10,22 +10,23 @@ namespace binary {
 	ui32 find_next(const ui32* p, ui32 bitsize, ui32 bit);
 	bool any(const ui32* p, ui32 bitsize);
 	bool all(const ui32* p, ui32 bitsize);
+	char at(const ui32* p, ui32 bit);
 	void set(ui32* p, ui32 bit);
 	void reset(ui32* p, ui32 bit);
 	void reset_le(ui32* p, ui32 bit);
 
+	ui32* submatrix(const ui32* src, const ui32* rows, ui32& m, const ui32& n);
+	ui32* transpose(const ui32* src, ui32 m, ui32 n);
 
 	//matrix elements are stored by rows
 	class Matrix {
 	public:
 		//taking and changing elements
-		char at(ui32 i, ui32 j) const throw();
-		void set(ui32 i, ui32 j) throw();
-		void set(ui32 j) throw();//when m_==1
-		void reset(ui32 i, ui32 j) throw();
-		void reset(ui32 j) throw();//when m_==1
-		ui32* row(ui32 i) throw();
-		const ui32* row(ui32 i) const throw();
+		char at(ui32 i, ui32 j) const throw() { return binary::at(row(i), j); }
+		void set(ui32 i, ui32 j) throw() { binary::set(row(i), j); }
+		void reset(ui32 i, ui32 j) throw() { binary::reset(row(i), j); }
+		ui32* row(ui32 i) throw() { return data_ + i*row_size(); }
+		const ui32* row(ui32 i) const throw() { return data_ + i*row_size(); }
 
 		//stats
 		inline ui32 row_size() const { return size(n_); }
@@ -35,8 +36,8 @@ namespace binary {
 		//service functions
 		void copy(const Matrix& src);
 		//void swap(Matrix& src) throw();
-		void transpose(const Matrix& src);
-		void submatrix(const ui32* rows);
+		//void transpose(const Matrix& src);
+		//void submatrix(const ui32* rows);
 		//void random(ui32 m, ui32 n, float d = 0.5, unsigned seed = 0);//generate random matrix with P(a[i,j]=1)=d
 
 		//constructors
@@ -52,7 +53,6 @@ namespace binary {
 		void print(FILE* pFile) const;
 		void print0x(FILE* pFile) const;
 		void print(const char* file_name, const char* mode = "w") const;
-		
 
 	protected:
 		void reserve(ui32 m, ui32 n);
@@ -62,5 +62,6 @@ namespace binary {
 		ui32 m_;//matrix hight
 		ui32 capacity_;//storage capacity
 	};
+
 
 }
