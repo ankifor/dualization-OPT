@@ -45,6 +45,10 @@ protected:
 			} while (text_.size() > 0 && text_.top() != ' ');
 		}
 
+		ui32& top() {
+			return data_.top();
+		}
+
 		void print(FILE* p_file) {
 			if (p_file == nullptr)
 				return;
@@ -64,6 +68,7 @@ protected:
 
 		Stack_Array<ui32> data_;
 		Stack_Array<char> text_;
+
 	};
 
 public:

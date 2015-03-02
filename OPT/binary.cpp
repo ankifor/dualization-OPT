@@ -36,6 +36,7 @@ ui32 binary::find_next(const ui32* p, ui32 bitsize, ui32 bit) {
 
 		ui32 buf = (p[ind] >> offset) << offset;
 		while (ind < size(bitsize) && !_BitScanForward(reinterpret_cast<unsigned long*>(&offset),buf)) {
+			
 			offset = UI32_BITS;
 			++ind;
 			buf = p[ind];
