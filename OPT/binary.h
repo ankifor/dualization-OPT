@@ -15,9 +15,12 @@ namespace binary {
 	}
 
 	inline ui32 size(ui32 bitsize) { return (bitsize + UI32_BITS - 1) >> UI32_LOG2BIT; }
+	inline ui32 size64(ui32 bitsize) { return (bitsize + UI64_BITS - 1) >> UI64_LOG2BIT; }
 	inline ui32 mask(ui32 bitsize) { return UI32_ALL >> (UI32_BITS - bitsize & UI32_MASK); }
+	inline ui64 mask64(ui32 bitsize) { return UI64_ALL >> (UI64_BITS - bitsize & UI64_MASK); }
 	ui32 popcount(const ui32* p, ui32 bitsize);
 	ui32 find_next(const ui32* p, ui32 bitsize, ui32 bit);
+	//ui32 find_first(const ui32* p, ui32& ind);
 	bool any(const ui32* p, ui32 bitsize);
 	bool all(const ui32* p, ui32 bitsize);
 	char at(const ui32* p, ui32 bit);
@@ -25,9 +28,11 @@ namespace binary {
 	void reset(ui32* p, ui32 bit);
 	void reset_le(ui32* p, ui32 bit);
 
+	
 
-	ui32* submatrix(const ui32* src, const ui32* rows, ui32& m, const ui32& n);
-	ui32* transpose(const ui32* src, ui32 m, ui32 n);
+
+	void submatrix(ui32* dst, const ui32* src, const ui32* rows, ui32 m, ui32 n);
+	void transpose(ui32* dst, const ui32* src, ui32 m, ui32 n);
 
 	//matrix elements are stored by rows
 	class Matrix {

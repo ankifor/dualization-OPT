@@ -1,4 +1,5 @@
-#include <intrin.h>//for _bittest, _bittestandset, _bittestandreset, _tzcnt_u32, __popcnt
+#include <intrin.h>//for _bittest, _bittestandset, _bittestandreset, , __popcnt
+
 #include <cstdio>//for fgetc, EOF, fopen, fclose, fputc
 #include <stdexcept>//for runtime_error
 //#include <time.h>//for time()
@@ -10,39 +11,47 @@
 
 using namespace std;
 
-ui32 binary::popcount(const ui32* p, ui32 bitsize) {
+ui32 binary::popcount(const ui32* p0, ui32 bitsize) {
 		assert(bitsize > 0);
 		ui32 sum = 0;
-		ui32 sz = size(bitsize);
+		ui32 sz = size64(bitsize);
+		const ui64* p = reinterpret_cast<const ui64*>(p0);
 
 		for (ui32 ind = 0; ind < sz - 1; ++ind) {
-			sum += __popcnt(p[ind]);
+			sum += __popcnt64(p[ind]);
 		}
-		sum += __popcnt(p[sz - 1] & mask(bitsize));
+		sum += __popcnt64(p[sz - 1] & mask64(bitsize));
 
 		return sum;
 }
 
-ui32 binary::find_next(const ui32* p, ui32 bitsize, ui32 bit) {
+ui32 binary::find_next(const ui32* p0, ui32 bitsize, ui32 bit) {
     assert(bitsize > 0);		
-    ui32 ind = bit >> UI32_LOG2BIT;
-    ui32 offset = bit & UI32_MASK;
+    ui32 ind = bit >> UI64_LOG2BIT;
+    ui32 offset = bit & UI64_MASK;
+		const ui64* p = reinterpret_cast<const ui64*>(p0);
 
-    ui32 buf = (p[ind] >> offset) << offset;
+    ui64 buf = (p[ind] >> offset) << offset;
     if (buf != 0) {
-			offset = _tzcnt_u32(buf);
+			offset = _tzcnt_u64(buf);
 		} else {
+			ui32 max_ind = size64(bitsize); // size(bitsize);
 			do {
 				++ind;
-			} while (ind < size(bitsize) && p[ind] == 0);
-			offset = _tzcnt_u32(p[ind]);//UI32_BITS==32
+			} while (((ind - max_ind) & UI32_SIGN) + p[ind] == UI32_SIGN);
+			offset = _tzcnt_u64(p[ind]);//UI32_BITS==32
 		}
-    return (ind << UI32_LOG2BIT) + offset;
-
-//	offset = _tzcnt_u32(buf);//UI32_BITS==32
-
+    return (ind << UI64_LOG2BIT) + offset;
 
 }
+
+//ui32 binary::find_first(const ui32* p, ui32& ind, ui32 max_ind) {
+//	while (ind < max_ind && p[ind] == 0)
+//
+//	ui32 res = _tzcnt_u32(p[ind]);
+//	ind += res >> UI32_LOG2BIT;//binary::test_zero(res ^ 0x20);
+//	return (ind << UI32_LOG2BIT) + res;
+//}
 
 bool binary::any(const ui32* p, ui32 bitsize) {
 	assert(bitsize > 0);
@@ -103,10 +112,8 @@ void binary::reset_le(ui32* p, ui32 bit) {
 	p[k] &= mask;
 }
 
-ui32* binary::transpose(const ui32* src, ui32 m, ui32 n) {
-	ui32 size_byte = size(m) * n * UI32_SIZE;
-	ui32* dst = static_cast<ui32*>(My_Memory::MM_malloc(size_byte));
-	My_Memory::MM_memset(dst, 0, size_byte);
+void binary::transpose(ui32* dst, const ui32* src, ui32 m, ui32 n) {
+	My_Memory::MM_memset(dst, 0, size(m) * n * UI32_SIZE);
 
 	for (ui32 i = 0; i < m; ++i) {
 		for (ui32 j = 0; j < n; ++j) {
@@ -114,24 +121,18 @@ ui32* binary::transpose(const ui32* src, ui32 m, ui32 n) {
 				set(dst + j * size(m), i);
 		}
 	}
-
-	return dst;
 }
 
-ui32* binary::submatrix(const ui32* src, const ui32* rows, ui32& m, const ui32& n) {
-	ui32 m_new = popcount(rows, m);
-	ui32* res = static_cast<ui32*>(My_Memory::MM_malloc(m_new * size(n) * UI32_SIZE));
+void binary::submatrix(ui32* dst, const ui32* src, const ui32* rows, ui32 m, ui32 n) {
+	//ui32 m_new = popcount(rows, m);
+	//ui32* res = static_cast<ui32*>(My_Memory::MM_malloc(m_new * size(n) * UI32_SIZE));
 	
 	ui32 i = find_next(rows, m, 0);	
-	ui32* dst = res;
 	while (i < m) {		
 		My_Memory::MM_memcpy(dst, src + i*size(n), size(n)*UI32_SIZE);
 		dst += size(n);
 		i = find_next(rows, m, i + 1);
 	}
-
-	m = m_new;
-	return res;
 }
 
 /**********************************************************

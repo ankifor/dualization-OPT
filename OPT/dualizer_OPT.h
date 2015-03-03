@@ -73,43 +73,26 @@ protected:
 
 public:
 
-	Dualizer_OPT() : 
-		matrix_    (nullptr),
-		matrix_t_  (nullptr),
-		m_         (0      ),
-		n_         (0      ),
-		n_coverings(0      ),
-		p_file     (nullptr),
-		tmp1_      (0      ),
-		tmp2_      (0      ),
-		tmp3_      (0      )
-	{}
-	~Dualizer_OPT() throw() { clear(); }
+	Dualizer_OPT() { My_Memory::MM_memset(this, 0, sizeof(Dualizer_OPT)); }
+	~Dualizer_OPT() { clear(); }
 
+	//preprocesses matrix, allocates memory, set matrix_, matrix_t_, m_, n_, etc
 	void init(const binary::Matrix& L, const char* file_name = nullptr, const char* mode = "w");
 	void clear() throw();
 	void run();
 
 protected:
 
-	void update_covered_and_support_rows(ui32* rows, ui32* covered_rows,
-		ui32* support_rows, ui32 j) const throw();
+	void update_covered_and_support_rows(ui32 j) throw();
 
-	void delete_zero_cols(const ui32* rows, ui32* cols) const throw();
+	void delete_zero_cols() throw();
 	
-	void delete_fobidden_cols(const ui32* support_rows, 
-		ui32* cols, const Covering& cov1, const ui32* cov2) const throw();
-
-	void delete_fobidden_cols1(const ui32* support_rows,
-		ui32* cols, const Covering& cov) const throw();
-
-	void delete_fobidden_cols2(const ui32* support_rows,
-		ui32* cols, const Covering& cov) const throw();
-
-	void delete_fobidden_cols3(const ui32* support_rows,
-		ui32* cols, const ui32* cov) const throw();
+	void delete_fobidden_cols()  throw();
+	void delete_fobidden_cols1() throw();
+	void delete_fobidden_cols2() throw();
+	void delete_fobidden_cols3() throw();
 	
-	void delete_le_rows(ui32* rows, const ui32* cols) const throw();
+	void delete_le_rows() throw();
 
 private:
 
@@ -125,16 +108,27 @@ private:
 	inline ui32 mask_n() const throw() { return binary::mask(n_); }
 
 private:
+	ui32* pool_;
 
 	ui32* matrix_;
 	ui32* matrix_t_;
+
+	ui32* rows;
+	ui32* cols;
+	ui32* support_rows;
+	ui32* covered_rows;
+	ui32* p_j;
+
+	ui32* cov;
+	Covering covering;
+
 	ui32 m_;
 	ui32 n_;
 	ui32 size_n_;
 	ui32 size_m_;
 	ui32 n_coverings;
-	//ui32 tmp1_;
-	//ui32 tmp2_;
-	//ui32 tmp3_;
+	ui32 tmp1_;
+	ui32 tmp2_;
+	ui32 tmp3_;
 	FILE* p_file;
 };
