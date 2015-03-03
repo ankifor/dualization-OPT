@@ -79,7 +79,10 @@ public:
 		m_         (0      ),
 		n_         (0      ),
 		n_coverings(0      ),
-		p_file     (nullptr)
+		p_file     (nullptr),
+		tmp1_      (0      ),
+		tmp2_      (0      ),
+		tmp3_      (0      )
 	{}
 	~Dualizer_OPT() throw() { clear(); }
 
@@ -94,8 +97,17 @@ protected:
 
 	void delete_zero_cols(const ui32* rows, ui32* cols) const throw();
 	
-	void delete_fobidden_cols(const ui32* one_sums, 
+	void delete_fobidden_cols(const ui32* support_rows, 
+		ui32* cols, const Covering& cov1, const ui32* cov2) const throw();
+
+	void delete_fobidden_cols1(const ui32* support_rows,
 		ui32* cols, const Covering& cov) const throw();
+
+	void delete_fobidden_cols2(const ui32* support_rows,
+		ui32* cols, const Covering& cov) const throw();
+
+	void delete_fobidden_cols3(const ui32* support_rows,
+		ui32* cols, const ui32* cov) const throw();
 	
 	void delete_le_rows(ui32* rows, const ui32* cols) const throw();
 
@@ -105,11 +117,11 @@ private:
 	void operator = (Dualizer_OPT const&) {};
 
 	inline ui32 m() const throw() { return m_; }
-	inline ui32 size_m() const throw() { return binary::size(m_); }
+	inline ui32 size_m() const throw() { return size_m_; }
 	inline ui32 mask_m() const throw() { return binary::mask(m_); }
 
 	inline ui32 n() const throw() { return n_; }
-	inline ui32 size_n() const throw() { return binary::size(n_); }
+	inline ui32 size_n() const throw() { return size_n_; }
 	inline ui32 mask_n() const throw() { return binary::mask(n_); }
 
 private:
@@ -118,6 +130,11 @@ private:
 	ui32* matrix_t_;
 	ui32 m_;
 	ui32 n_;
+	ui32 size_n_;
+	ui32 size_m_;
 	ui32 n_coverings;
+	ui32 tmp1_;
+	ui32 tmp2_;
+	ui32 tmp3_;
 	FILE* p_file;
 };

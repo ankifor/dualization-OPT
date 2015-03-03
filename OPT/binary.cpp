@@ -10,7 +10,6 @@
 
 using namespace std;
 
-
 ui32 binary::popcount(const ui32* p, ui32 bitsize) {
 		assert(bitsize > 0);
 		ui32 sum = 0;
