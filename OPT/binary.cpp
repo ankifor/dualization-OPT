@@ -14,49 +14,33 @@ ui32 binary::popcount(const ui32* p, ui32 bitsize) {
 		assert(bitsize > 0);
 		ui32 sum = 0;
 		ui32 sz = size(bitsize);
-		ui32 buf = p[sz - 1];
 
-		const_cast<ui32*>(p)[sz - 1] &= mask(bitsize);
-
-		for (ui32 ind = 0; ind < sz; ++ind) {
+		for (ui32 ind = 0; ind < sz - 1; ++ind) {
 			sum += __popcnt(p[ind]);
 		}
+		sum += __popcnt(p[sz - 1] & mask(bitsize));
 
-		const_cast<ui32*>(p)[sz - 1] = buf;
 		return sum;
 }
 
 ui32 binary::find_next(const ui32* p, ui32 bitsize, ui32 bit) {
-		assert(bitsize > 0);
-		assert(sizeof(unsigned long) == sizeof(ui32));
+    assert(bitsize > 0);		
+    ui32 ind = bit >> UI32_LOG2BIT;
+    ui32 offset = bit & UI32_MASK;
 
-		ui32 ind = bit >> UI32_LOG2BIT;
-		ui32 offset = bit & UI32_MASK;
-
-		ui32 buf = (p[ind] >> offset) << offset;
-		while (ind < size(bitsize) && !_BitScanForward(reinterpret_cast<unsigned long*>(&offset),buf)) {
-			
-			offset = UI32_BITS;
-			++ind;
-			buf = p[ind];
+    ui32 buf = (p[ind] >> offset) << offset;
+    if (buf != 0) {
+			offset = _tzcnt_u32(buf);
+		} else {
+			do {
+				++ind;
+			} while (ind < size(bitsize) && p[ind] == 0);
+			offset = _tzcnt_u32(p[ind]);//UI32_BITS==32
 		}
-		return (ind << UI32_LOG2BIT) + offset;
+    return (ind << UI32_LOG2BIT) + offset;
 
-		//ui32 ind = bit >> UI32_LOG2BIT;
-		//ui32 offset = bit & UI32_MASK;
-		//ui32 buf = (p[ind] >> offset) << offset;
-		//ui32 sz = size(bitsize);
-	
-		//while (ind < sz) {
-		//	offset = _tzcnt_u32(buf);//UI32_BITS==32
-		//	if (offset == UI32_BITS) {
-		//		++ind;
-		//		buf = p[ind];
-		//	} else {
-		//		break;
-		//	}
-		//}
-		//return (ind << UI32_LOG2BIT) + offset;
+//	offset = _tzcnt_u32(buf);//UI32_BITS==32
+
 
 }
 

@@ -144,60 +144,51 @@ void Dualizer_OPT::delete_le_rows(ui32* rows, const ui32* cols) const throw() {
 void Dualizer_OPT::delete_fobidden_cols(const ui32* support_rows,
 	ui32* cols, const Covering& cov1, const ui32* cov2) const throw() 
 {
-	//__popcnt
-	const_cast<ui32*>(support_rows)[size_m() - 1] &= mask_m();
+	////__popcnt
+	//const_cast<ui32*>(support_rows)[size_m() - 1] &= mask_m();
 
 
-	ui32 n1 = binary::popcount(cols, n()) * cov1.size();
-	
-	ui32 n2 = 0;
-	for (ui32 u = 0; u < cov1.size(); ++u) {
-		const ui32* col_u = matrix_t_ + cov1[u] * size_m();
-		for (ui32 ind = 0; ind < size_m(); ++ind) {
-			n2 += __popcnt(support_rows[ind] & col_u[ind]);
-		}
-	}
-	
-	ui32 n3 = 0;
-	for (ui32 j = binary::find_next(cols, n(), 0); j < n(); j = binary::find_next(cols, n(), j + 1)) {
-		const ui32* col_j = matrix_t_ + j * size_m();
-		for (ui32 ind = 0; ind < size_m(); ++ind) {
-			n3 += __popcnt(support_rows[ind] & ~col_j[ind]);
-		}
-	}
-
-	if (n1 < n2) {
-		if (n1 < n3) {
-			delete_fobidden_cols1(support_rows, cols, cov1);
-		} else {
-			delete_fobidden_cols3(support_rows, cols, cov2);
-		}
-	} else {
-		if (n2 < n3) {
-			delete_fobidden_cols2(support_rows, cols, cov1);
-		} else {
-			delete_fobidden_cols3(support_rows, cols, cov2);
-		}
-
-	}
-
-
-
-
-
-
-
-
-
-
-	//ui32 cols_count = binary::popcount(cols, n());
-	////ui32 support_rows_count = binary::popcount(support_rows, m());
-	//ui32 cov_count = cov1.size();
-	//if (cols_count < cov_count) {
-	//	delete_fobidden_cols3(support_rows, cols, cov2);
-	//} else {
-	//	delete_fobidden_cols2(support_rows, cols, cov1);
+	//ui32 n1 = binary::popcount(cols, n()) * cov1.size();
+	//
+	//ui32 n2 = 0;
+	//for (ui32 u = 0; u < cov1.size(); ++u) {
+	//	const ui32* col_u = matrix_t_ + cov1[u] * size_m();
+	//	for (ui32 ind = 0; ind < size_m(); ++ind) {
+	//		n2 += __popcnt(support_rows[ind] & col_u[ind]);
+	//	}
 	//}
+	//
+	//ui32 n3 = 0;
+	//for (ui32 j = binary::find_next(cols, n(), 0); j < n(); j = binary::find_next(cols, n(), j + 1)) {
+	//	const ui32* col_j = matrix_t_ + j * size_m();
+	//	for (ui32 ind = 0; ind < size_m(); ++ind) {
+	//		n3 += __popcnt(support_rows[ind] & ~col_j[ind]);
+	//	}
+	//}
+
+	//if (n1 < n2) {
+	//	if (n1 < n3) {
+	//		delete_fobidden_cols1(support_rows, cols, cov1);
+	//	} else {
+	//		delete_fobidden_cols3(support_rows, cols, cov2);
+	//	}
+	//} else {
+	//	if (n2 < n3) {
+	//		delete_fobidden_cols2(support_rows, cols, cov1);
+	//	} else {
+	//		delete_fobidden_cols3(support_rows, cols, cov2);
+	//	}
+
+	//}
+
+	ui32 cols_count = binary::popcount(cols, n());
+	//ui32 support_rows_count = binary::popcount(support_rows, m());
+	ui32 cov_count = cov1.size();
+	if (cols_count < cov_count) {
+		delete_fobidden_cols3(support_rows, cols, cov2);
+	} else {
+		delete_fobidden_cols2(support_rows, cols, cov1);
+	}
 
 }
 
@@ -215,7 +206,7 @@ void Dualizer_OPT::delete_fobidden_cols1(const ui32* support_rows,
 
 		ui32 j = binary::find_next(cols, n(), 0);
 		while (j < n()) {
-			++*const_cast<ui32*>(&tmp1_);
+			//++*const_cast<ui32*>(&tmp1_);
 			const ui32* col_j = matrix_t_ + j * size_m();
 
 			ui32 buf = UI32_ALL;
@@ -253,7 +244,7 @@ void Dualizer_OPT::delete_fobidden_cols2(const ui32* support_rows,
 
 		i = binary::find_next(ru, m(), 0);
 		while (i < m()) {
-			++*const_cast<ui32*>(&tmp2_);
+			//++*const_cast<ui32*>(&tmp2_);
 			const ui32* row_i = matrix_ + i * size_n();
 
 			for (ui32 ind = 0; ind < size_n(); ++ind) {
@@ -294,7 +285,7 @@ void Dualizer_OPT::delete_fobidden_cols3(const ui32* support_rows,
 		i = binary::find_next(rj, m(), 0);
 		while (i < m()) {
 			const ui32* row_i = matrix_ + i*size_n();
-			++*const_cast<ui32*>(&tmp3_);
+			//++*const_cast<ui32*>(&tmp3_);
 
 			for (ui32 ind = 0; ind < size_n(); ++ind) {
 				buf[ind] &= ~row_i[ind];
@@ -399,8 +390,8 @@ void Dualizer_OPT::run() {
 		up_to_date = true;
 	}
 
-	printf("Irreducible coverings: %d\ntmp1_: %d\ntmp2_: %d\ntmp3_: %d\n", n_coverings, tmp1_, tmp2_, tmp3_);
-
+	//printf("Irreducible coverings: %d\ntmp1_: %d\ntmp2_: %d\ntmp3_: %d\n", n_coverings, tmp1_, tmp2_, tmp3_);
+	printf("Irreducible coverings: %d\n", n_coverings);
 	My_Memory::MM_free(pool);
 	My_Memory::MM_free(cov);
 }

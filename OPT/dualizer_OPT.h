@@ -133,8 +133,8 @@ private:
 	ui32 size_n_;
 	ui32 size_m_;
 	ui32 n_coverings;
-	ui32 tmp1_;
-	ui32 tmp2_;
-	ui32 tmp3_;
+	//ui32 tmp1_;
+	//ui32 tmp2_;
+	//ui32 tmp3_;
 	FILE* p_file;
 };
