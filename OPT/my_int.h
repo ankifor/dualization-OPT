@@ -16,3 +16,7 @@ typedef unsigned long long ui64;
 #define UI64_BITS ui32(64)
 #define UI64_SIZE ui32(8)
 #define UI64_ALL (~ui64(0))
+
+#define RE_64(x) reinterpret_cast<ui64*>(x)
+#define RE_C64(x) reinterpret_cast<const ui64*>(x)
+#define RE_32(x) reinterpret_cast<ui32*>(x)

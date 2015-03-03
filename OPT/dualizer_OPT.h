@@ -100,12 +100,16 @@ private:
 	void operator = (Dualizer_OPT const&) {};
 
 	inline ui32 m() const throw() { return m_; }
-	inline ui32 size_m() const throw() { return size_m_; }
+	inline ui32 size_m() const throw() { return binary::size(m_); }
+	inline ui32 size64_m() const throw() { return binary::size64(m_); }
 	inline ui32 mask_m() const throw() { return binary::mask(m_); }
+	inline ui64 mask64_m() const throw() { return binary::mask64(m_); }
 
 	inline ui32 n() const throw() { return n_; }
-	inline ui32 size_n() const throw() { return size_n_; }
+	inline ui32 size_n() const throw() { return binary::size(n_); }
+	inline ui32 size64_n() const throw() { return binary::size64(n_); }
 	inline ui32 mask_n() const throw() { return binary::mask(n_); }
+	inline ui64 mask64_n() const throw() { return binary::mask64(n_); }
 
 private:
 	ui32* pool_;
@@ -124,8 +128,8 @@ private:
 
 	ui32 m_;
 	ui32 n_;
-	ui32 size_n_;
-	ui32 size_m_;
+	//ui32 size_n_;
+	//ui32 size_m_;
 	ui32 n_coverings;
 	ui32 tmp1_;
 	ui32 tmp2_;
