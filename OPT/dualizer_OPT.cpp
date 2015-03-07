@@ -1,7 +1,8 @@
 #include <assert.h>//for assert
 #include <string> //for string(), +
 #include <intrin.h>
-
+#include <cstdlib>//for rand
+#include <ctime>//for time
 
 #include "dualizer_OPT.h"
 #include "my_memory.h"
@@ -345,6 +346,12 @@ void Dualizer_OPT::run() {
 			continue;
 		}
 
+		if (stack.size() >= level_rand_ && rand() > RAND_MAX * prob_) {
+			++*p_j;
+			up_to_date = true;
+			continue;
+		}
+
 		binary::reset_le(cols, *p_j);
 		covering.append(*p_j);
 		binary::set(cov, *p_j);
@@ -379,11 +386,16 @@ void Dualizer_OPT::run() {
 		up_to_date = true;
 	}
 
-	printf("Irreducible coverings: %d\ntmp1_: %d\ntmp2_: %d\ntmp3_: %d\n", n_coverings, tmp1_, tmp2_, tmp3_);
-	//printf("Irreducible coverings: %d\n", n_coverings);
+	//printf("Irreducible coverings: %d\ntmp1_: %d\ntmp2_: %d\ntmp3_: %d\n", n_coverings, tmp1_, tmp2_, tmp3_);
+	printf("Irreducible coverings: %d\n", n_coverings);
 }
 
-void Dualizer_OPT::init(const binary::Matrix& L, const char* file_name, const char* mode) {
+void Dualizer_OPT::init(const binary::Matrix& L, const char* file_name, const char* mode,
+	ui32 level, float prob) 
+{
+	level_rand_ = level;
+	prob_ = prob;
+	srand(time(0));
 	if (L.width() == 0 || L.height() == 0)
 		throw std::runtime_error("Dualizer_OPT::init::empty matrix");
 

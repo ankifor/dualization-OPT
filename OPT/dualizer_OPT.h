@@ -77,7 +77,8 @@ public:
 	~Dualizer_OPT() { clear(); }
 
 	//preprocesses matrix, allocates memory, set matrix_, matrix_t_, m_, n_, etc
-	void init(const binary::Matrix& L, const char* file_name = nullptr, const char* mode = "w");
+	void init(const binary::Matrix& L, const char* file_name = nullptr, const char* mode = "w", 
+		ui32 level = ~0, float prob = 1);
 	void clear() throw();
 	void run();
 
@@ -135,4 +136,6 @@ private:
 	ui32 tmp2_;
 	ui32 tmp3_;
 	FILE* p_file;
+	ui32 level_rand_;
+	float prob_;
 };
