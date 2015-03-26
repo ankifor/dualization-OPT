@@ -25,6 +25,10 @@ public:
 		*(pool_stack_.top() + offset) = j_next;
 	}
 
+	inline void reset_cols(ui32 j,  ui32 offset) {
+		binary::reset((pool_stack_.top() + offset), j);
+	}
+
 	inline void pop() throw() { 
 		pool_stack_.pop(); 
 	}
@@ -256,6 +260,40 @@ void Dualizer_OPT::delete_fobidden_cols3() throw() {
 
 }
 
+char Dualizer_OPT::create_search_set(ui32* set) throw() {
+	ui32* unobserved = static_cast<ui32*>(alloca(size_m()*UI32_SIZE));
+	ui32 buf = 0;
+	ui32 ind = 0;
+	for (ind = 0; ind < size_m() - 1; ++ind) {
+		unobserved[ind] = ~(covered_rows[ind] | rows[ind]);
+		buf |= unobserved[ind];
+	}
+	unobserved[ind] = ~(covered_rows[ind] | rows[ind]) & mask_m();
+	buf |= unobserved[ind];
+	
+	if (buf == 0) {
+		return 0;
+	}
+
+	My_Memory::MM_memset(set, 0, size_n()*UI32_SIZE);
+	cols[size_n() - 1] &= mask_n();
+	ui32 i = binary::find_next(unobserved, m(), 0);
+	
+	while (i < m()) {
+		ui32* row_i = RE_32(matrix_ + i * size_n());
+		for (ind = 0; ind < size_m(); ++ind) {
+			set[ind] |= row_i[ind];
+		}
+		i = binary::find_next(unobserved, m(), i+1);
+	}
+	for (ind = 0; ind < size_m(); ++ind) {
+		set[ind] &= cols[ind];
+	}
+	return 1;
+
+}
+
+
 void Dualizer_OPT::run() {
 	
 	covering.reserve(20);
@@ -264,6 +302,7 @@ void Dualizer_OPT::run() {
 	//rows, cols, support_rows, covered_rows
 	//they are stored in variable pool for efficiency
 	ui32* const state = rows;
+	ui32* set = static_cast<ui32*>(My_Memory::MM_malloc(m()*UI32_SIZE));
 
 	My_Memory::MM_memset(rows, ~0, (size_n() + size_m())*UI32_SIZE);//rows and cols
 	My_Memory::MM_memset(support_rows,  0, (2 * size_m() + 1)*UI32_SIZE);//support_rows and covered_rows
@@ -275,13 +314,16 @@ void Dualizer_OPT::run() {
 
 	//helps to avoid double copying
 	bool up_to_date = true;
-
 	//in-depth tree search
 	while (!stack.empty()) {		
 		if (!up_to_date)
-			stack.copy_top(state);
-		*p_j = binary::find_next(cols, n(), *p_j);
-
+			stack.copy_top(state);		
+		
+		if (create_search_set(set) == 0) {
+			*p_j = binary::find_next(cols, n(), *p_j);
+		} else {
+			*p_j = binary::find_next(set , n(), *p_j);
+		}
 		//any children left?
 		if (*p_j >= n()) {
 			//all children are finished, go up
@@ -294,7 +336,10 @@ void Dualizer_OPT::run() {
 			continue;
 		}
 
-		binary::reset_le(cols, *p_j);
+		//binary::reset_le(cols, *p_j);
+		stack.reset_cols(*p_j, cols - state);
+		binary::reset(cols, *p_j);
+
 		covering.append(*p_j);
 		binary::set(cov, *p_j);
 
@@ -324,10 +369,12 @@ void Dualizer_OPT::run() {
 		delete_le_rows();
 		delete_zero_cols();
 
+		*p_j = 0;
 		stack.push(state);
 		up_to_date = true;
 	}
-
+	
+	My_Memory::MM_free(set);
 	printf("Irreducible coverings: %d\n", n_coverings);
 }
 
