@@ -8,7 +8,6 @@
 #include "my_memory.h"
 #include "pool_stack.h"
 
-//#define __ZF ((ui32) ((__readeflags() >> 6) & 1))
 
 
 using namespace std;
@@ -116,12 +115,12 @@ void Dualizer_OPT::delete_le_rows() throw() {
 			ui64 buf2 = 0;
 			ui32 ind = 0;
 			while (ind < size64_n() - 1) {
-				buf1 |=  row1[ind] & ~row2[ind];
-				buf2 |= ~row1[ind] &  row2[ind];
+				buf1 |=  row1[ind] & ~row2[ind] & RE_64(cols)[ind];
+				buf2 |= ~row1[ind] &  row2[ind] & RE_64(cols)[ind];
 				++ind;
 			}
-			buf1 |=  row1[ind] & ~row2[ind] & mask64_n();
-			buf2 |= ~row1[ind] &  row2[ind] & mask64_n();
+			buf1 |= row1[ind] & ~row2[ind] & RE_64(cols)[ind] & mask64_n();
+			buf2 |= ~row1[ind] & row2[ind] & RE_64(cols)[ind] & mask64_n();
 
 			//rows[i2 >> UI32_LOG2BIT] ^= binary::test_zero(buf) << (i2 & UI32_MASK);
 			if (buf1 == 0) {
@@ -139,54 +138,6 @@ void Dualizer_OPT::delete_le_rows() throw() {
 }
 
 void Dualizer_OPT::delete_fobidden_cols() throw() {
-
-	//ui32 n1 = binary::popcount(cols, n()) * covering.size();
-	//
-	//ui32 sz = binary::size64(m());
-	//ui64 buf = reinterpret_cast<ui64*>(support_rows)[binary::size64(m()) - 1];
-	//reinterpret_cast<ui64*>(support_rows)[sz - 1] &= binary::mask64(m());
-
-
-	//ui32 n2 = 0;
-	//for (ui32 u = 0; u < covering.size(); ++u) {
-	//	const ui32* col_u = matrix_t_ + covering[u] * size_m();
-	//	for (ui32 ind = 0; ind < sz; ++ind) {
-	//		//n2 += __popcnt(support_rows[ind] & col_u[ind]);
-	//		n2 += __popcnt64(
-	//			reinterpret_cast<ui64*>(support_rows)[ind] &
-	//			reinterpret_cast<const ui64*>(col_u)[ind]
-	//			);
-	//	}
-	//}
-	//
-	//ui32 n3 = 0;
-	//for (ui32 j = binary::find_next(cols, n(), 0); j < n(); j = binary::find_next(cols, n(), j + 1)) {
-	//	const ui32* col_j = matrix_t_ + j * size_m();
-	//	for (ui32 ind = 0; ind < sz; ++ind) {
-	//		//n3 += __popcnt(support_rows[ind] & ~col_j[ind]);
-	//		n3 += __popcnt64(
-	//			reinterpret_cast<ui64*>(support_rows)[ind] &
-	//			~reinterpret_cast<const ui64*>(col_j)[ind]
-	//			);
-	//	}
-	//}
-
-	//reinterpret_cast<ui64*>(support_rows)[sz - 1] = buf;
-
-	//if (n1 < n2) {
-	//	if (n1 < n3) {
-	//		delete_fobidden_cols1();
-	//	} else {
-	//		delete_fobidden_cols3();
-	//	}
-	//} else {
-	//	if (n2 < n3) {
-	//		delete_fobidden_cols2();
-	//	} else {
-	//		delete_fobidden_cols3();
-	//	}
-	//}
-
 	ui32 cols_count = binary::popcount(cols, n());
 	ui32 cov_count = covering.size();
 
@@ -209,7 +160,6 @@ void Dualizer_OPT::delete_fobidden_cols1() throw() {
 
 		ui32 j = binary::find_next(cols, n(), 0);
 		while (j < n()) {
-			tmp1_++;
 			const ui32* col_j = matrix_t_ + j * size_m();
 
 			ui32 buf = UI32_ALL;
@@ -246,7 +196,6 @@ void Dualizer_OPT::delete_fobidden_cols2() throw() {
 
 		i = binary::find_next(RE_32(ru), m(), 0);
 		while (i < m()) {
-			tmp2_++;
 			const ui64* row_i = RE_64(matrix_ + i * size_n());
 
 			for (ui32 ind = 0; ind < size64_n(); ++ind) {
@@ -286,7 +235,6 @@ void Dualizer_OPT::delete_fobidden_cols3() throw() {
 		i = binary::find_next(RE_32(rj), m(), 0);
 		while (i < m()) {
 			const ui64* row_i = RE_64(matrix_ + i*size_n());
-			tmp3_++;
 			for (ui32 ind = 0; ind < size64_n(); ++ind) {
 				buf[ind] &= ~row_i[ind];
 			}			
@@ -346,12 +294,6 @@ void Dualizer_OPT::run() {
 			continue;
 		}
 
-		if (stack.size() >= level_rand_ && rand() > RAND_MAX * prob_) {
-			++*p_j;
-			up_to_date = true;
-			continue;
-		}
-
 		binary::reset_le(cols, *p_j);
 		covering.append(*p_j);
 		binary::set(cov, *p_j);
@@ -386,15 +328,11 @@ void Dualizer_OPT::run() {
 		up_to_date = true;
 	}
 
-	//printf("Irreducible coverings: %d\ntmp1_: %d\ntmp2_: %d\ntmp3_: %d\n", n_coverings, tmp1_, tmp2_, tmp3_);
 	printf("Irreducible coverings: %d\n", n_coverings);
 }
 
-void Dualizer_OPT::init(const binary::Matrix& L, const char* file_name, const char* mode,
-	ui32 level, float prob) 
+void Dualizer_OPT::init(const binary::Matrix& L, const char* file_name, const char* mode) 
 {
-	level_rand_ = level;
-	prob_ = prob;
 	srand(time(0));
 	if (L.width() == 0 || L.height() == 0)
 		throw std::runtime_error("Dualizer_OPT::init::empty matrix");

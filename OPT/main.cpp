@@ -38,7 +38,7 @@ void main(int argc, char** argv) {
 #ifdef NDEBUG
 		//clock_t begin = clock();
 		L.read(argv[1]);
-		solver.init(L, argv[2], "w", 3, atof(argv[3]));
+		solver.init(L, argv[2], "w");
 		solver.run();
 		//clock_t end = clock();
 		//double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
