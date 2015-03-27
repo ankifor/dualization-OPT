@@ -54,9 +54,10 @@ protected:
 				return;
 			assert(text_.size() > 0);
 			text_.top() = '\n';
-			text_.push('\0');
-			fputs(text_.get_data(), p_file);
-			text_.pop();
+			//text_.push('\0');
+			//fputs(text_.get_data(), p_file);
+			fwrite(text_.get_data(), 1, text_.size(), p_file);
+			//text_.pop();
 			text_.top() = ' ';
 		}
 

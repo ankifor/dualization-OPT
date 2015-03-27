@@ -103,9 +103,6 @@ void Dualizer_OPT::delete_zero_cols() throw() {
 }
 
 void Dualizer_OPT::delete_le_rows() throw() {
-	if (binary::popcount(cols, n()) == 0)
-		return;
-
 	ui32 i1 = binary::find_next(rows, m(), 0);
 	ui32 i2 = 0;
 
@@ -123,8 +120,8 @@ void Dualizer_OPT::delete_le_rows() throw() {
 				buf2 |= ~row1[ind] &  row2[ind] & RE_64(cols)[ind];
 				++ind;
 			}
-			buf1 |= row1[ind] & ~row2[ind] & RE_64(cols)[ind] & mask64_n();
-			buf2 |= ~row1[ind] & row2[ind] & RE_64(cols)[ind] & mask64_n();
+			buf1 |=  row1[ind] & ~row2[ind] & RE_64(cols)[ind] & mask64_n();
+			buf2 |= ~row1[ind] &  row2[ind] & RE_64(cols)[ind] & mask64_n();
 
 			//rows[i2 >> UI32_LOG2BIT] ^= binary::test_zero(buf) << (i2 & UI32_MASK);
 			if (buf1 == 0) {
@@ -319,11 +316,11 @@ void Dualizer_OPT::run() {
 		if (!up_to_date)
 			stack.copy_top(state);		
 		
-		if (create_search_set(set) == 0) {
-			*p_j = binary::find_next(cols, n(), *p_j);
-		} else {
-			*p_j = binary::find_next(set , n(), *p_j);
-		}
+		//if (create_search_set(set) == 0) {
+			*p_j = binary::find_next(cols, n(), 0);
+		//} else {
+		//	*p_j = binary::find_next(set , n(), 0);
+		//}
 		//any children left?
 		if (*p_j >= n()) {
 			//all children are finished, go up
@@ -351,12 +348,8 @@ void Dualizer_OPT::run() {
 
 		//leaf?
 		if (!binary::any(rows, m())) {
-			//false positive?
-			if (binary::all(covered_rows, m())) {
-				//irreducible covering (true positive)
-				covering.print(p_file);
-				++n_coverings;
-			}
+			covering.print(p_file);
+			++n_coverings;
 			//go up in the tree
 			binary::reset(cov, covering.top());
 			covering.remove_last();			
@@ -366,12 +359,13 @@ void Dualizer_OPT::run() {
 
 		//prepare child
 		delete_fobidden_cols();
-		delete_le_rows();
-		delete_zero_cols();
-
-		*p_j = 0;
+		if (binary::any(cols, n())) {
+			delete_le_rows();
+			delete_zero_cols();
+		}
 		stack.push(state);
 		up_to_date = true;
+		
 	}
 	
 	My_Memory::MM_free(set);
