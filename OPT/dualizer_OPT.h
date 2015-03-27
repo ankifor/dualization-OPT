@@ -95,7 +95,7 @@ protected:
 	
 	void delete_le_rows() throw();
 
-	char create_search_set(ui32* set) throw();
+	//char create_search_set(ui32* set) throw();
 
 private:
 
