@@ -150,35 +150,35 @@ void Dualizer_OPT::delete_fobidden_cols() throw() {
 
 }
 
-void Dualizer_OPT::delete_fobidden_cols1() throw() {
-	ui32 u = 0;
-	ui32 ind = 0;
-
-	const_cast<ui32*>(support_rows)[size_m() - 1] &= mask_m();
-
-	while (u < covering.size()) {
-		const ui32* col_u = matrix_t_ + covering[u] * size_m();
-
-		ui32 j = binary::find_next(cols, n(), 0);
-		while (j < n()) {
-			const ui32* col_j = matrix_t_ + j * size_m();
-
-			ui32 buf = UI32_ALL;
-			ind = 0;
-			while (ind < size_m()) {
-				buf &= col_j[ind] | ~(col_u[ind] & support_rows[ind]);
-				++ind;
-			}
-
-			if (buf == UI32_ALL)
-				binary::reset(cols, j);
-
-			j = binary::find_next(cols, n(), j + 1);
-		}
-		++u;
-	}
-
-}
+//void Dualizer_OPT::delete_fobidden_cols1() throw() {
+//	ui32 u = 0;
+//	ui32 ind = 0;
+//
+//	const_cast<ui32*>(support_rows)[size_m() - 1] &= mask_m();
+//
+//	while (u < covering.size()) {
+//		const ui32* col_u = matrix_t_ + covering[u] * size_m();
+//
+//		ui32 j = binary::find_next(cols, n(), 0);
+//		while (j < n()) {
+//			const ui32* col_j = matrix_t_ + j * size_m();
+//
+//			ui32 buf = UI32_ALL;
+//			ind = 0;
+//			while (ind < size_m()) {
+//				buf &= col_j[ind] | ~(col_u[ind] & support_rows[ind]);
+//				++ind;
+//			}
+//
+//			if (buf == UI32_ALL)
+//				binary::reset(cols, j);
+//
+//			j = binary::find_next(cols, n(), j + 1);
+//		}
+//		++u;
+//	}
+//
+//}
 
 void Dualizer_OPT::delete_fobidden_cols2() throw() {
 	ui64* buf = static_cast<ui64*>(alloca(size64_n()*UI64_SIZE));
@@ -191,32 +191,25 @@ void Dualizer_OPT::delete_fobidden_cols2() throw() {
 	ui64 const*  row_i_next = nullptr;
 
 	while (u < covering.size()) {
-		My_Memory::MM_memset(buf, ~0, size64_n()*UI64_SIZE);
-		ui64 const* col_u = RE_64(matrix_t_ + covering[u] * size_m());
 
+		My_Memory::MM_memset(buf, 0, size64_n()*UI64_SIZE);
+		ui64 const* col_u = RE_64(matrix_t_ + covering[u] * size_m());
 		for (ui32 ind = 0; ind < size64_m(); ++ind) {
 			ru[ind] = RE_64(support_rows)[ind] & col_u[ind];			
 		}
 
 		i = binary::find_next(RE_32(ru), m(), 0);		
-		row_i = RE_64(matrix_ + i * size_n());
+
 		while (i < m()) {
-			i_next = binary::find_next(RE_32(ru), m(), i + 1);
-			row_i_next = RE_64(matrix_ + i_next * size_n());
-			_mm_prefetch((const char*)row_i_next, 0);
+			row_i = RE_64(matrix_ + i * size_n());
 
 			for (ui32 ind = 0; ind < size64_n(); ++ind) {
-				buf[ind] &= row_i[ind];
+				buf[ind] |= RE_64(cols)[ind] & ~row_i[ind];
 			}
-
-			i = i_next;
-			row_i = row_i_next;
+			i = binary::find_next(RE_32(ru), m(), i + 1);			
 		}
 
-		for (ui32 ind = 0; ind < size_n(); ++ind) {
-			cols[ind] &= ~RE_32(buf)[ind];
-		}
-
+		My_Memory::MM_memcpy(cols, buf, size_n()*UI32_SIZE);
 		++u;
 	}
 
@@ -245,11 +238,9 @@ void Dualizer_OPT::delete_fobidden_cols3() throw() {
 		
 		while (i < m()) {
 			row_i = RE_64(matrix_ + i*size_n());
-			 
 			for (ui32 ind = 0; ind < size64_n(); ++ind) {
 				buf[ind] &= ~row_i[ind];
 			}			
-
 			i = binary::find_next(RE_32(rj), m(), i+1);
 		}
 
@@ -303,13 +294,12 @@ void Dualizer_OPT::delete_fobidden_cols3() throw() {
 
 void Dualizer_OPT::run() {
 	
-	covering.reserve(20);
+	covering.reserve(20, n());
 
 	//current tree node may be described by 5 variables:
 	//rows, cols, support_rows, covered_rows
 	//they are stored in variable pool for efficiency
 	ui32* const state = rows;
-	ui32* set = static_cast<ui32*>(My_Memory::MM_malloc(m()*UI32_SIZE));
 
 	My_Memory::MM_memset(rows, ~0, (size_n() + size_m())*UI32_SIZE);//rows and cols
 	My_Memory::MM_memset(support_rows,  0, (size_m() + 1)*UI32_SIZE);//support_rows and covered_rows
@@ -374,9 +364,7 @@ void Dualizer_OPT::run() {
 		up_to_date = true;
 		
 	}
-	
-	My_Memory::MM_free(set);
-	printf("Irreducible coverings: %d\n", n_coverings);
+	print();
 }
 
 void Dualizer_OPT::init(const binary::Matrix& L, const char* file_name, const char* mode) 

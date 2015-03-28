@@ -10,9 +10,17 @@ protected:
 	class Covering {
 	public:
 
-		void reserve(ui32 size) {
+		void reserve(ui32 size, ui32 width) {
 			data_.reserve(size);
 			text_.reserve(size * 4);
+			frequency_ = (ui32*) My_Memory::MM_malloc(width*UI32_SIZE);
+			My_Memory::MM_memset(frequency_, 0, width*UI32_SIZE);
+		}
+
+		~Covering() {
+			if (frequency_ != nullptr) {
+				My_Memory::MM_free(frequency_);
+			}
 		}
 
 		void append(ui32 num) {
@@ -50,25 +58,38 @@ protected:
 		}
 
 		void print(FILE* p_file) {
-			if (p_file == nullptr)
-				return;
-			assert(text_.size() > 0);
-			text_.top() = '\n';
-			//text_.push('\0');
-			//fputs(text_.get_data(), p_file);
-			fwrite(text_.get_data(), 1, text_.size(), p_file);
-			//text_.pop();
-			text_.top() = ' ';
+			if (p_file == nullptr) {
+				++frequency_[data_[0]];
+			} else {
+				assert(text_.size() > 0);
+				text_.top() = '\n';
+				//text_.push('\0');
+				//fputs(text_.get_data(), p_file);
+				fwrite(text_.get_data(), 1, text_.size(), p_file);
+				//text_.pop();
+				text_.top() = ' ';
+			}
 		}
 
 		ui32 operator[] (ui32 ind) const throw() { return data_[ind]; }
 		
 		ui32 size() const throw() { return data_.size(); }
 
+		void print_freq(ui32 width) {
+			for (ui32 i = 0; i < width; ++i) {
+				printf("%d ", frequency_[i]);
+			}
+			printf("\n");
+		}
+
+		ui32* get_freq() {
+			return frequency_;
+		}
 	private:
 
 		Stack_Array<ui32> data_;
 		Stack_Array<char> text_;
+		ui32* frequency_ = nullptr;
 
 	};
 
@@ -81,6 +102,12 @@ public:
 	void init(const binary::Matrix& L, const char* file_name = nullptr, const char* mode = "w");
 	void clear() throw();
 	void run();
+	void print() {
+		printf("Irreducible coverings: %d\n", n_coverings);
+		if (p_file == nullptr)
+			covering.print_freq(n());
+	}
+	ui32* get_freq() { return covering.get_freq(); }
 
 protected:
 

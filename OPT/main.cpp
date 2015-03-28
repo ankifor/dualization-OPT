@@ -45,7 +45,7 @@ void main(int argc, char** argv) {
 		//cout << "Elapsed time: " << elapsed_secs << endl;
 #else
 		L.read("mat.txt");
-		solver.init(L, "res.txt");
+		solver.init(L);
 		solver.run();
 #endif
 
