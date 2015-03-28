@@ -182,23 +182,21 @@ void Dualizer_OPT::delete_fobidden_cols() throw() {
 
 void Dualizer_OPT::delete_fobidden_cols2() throw() {
 	ui64* buf = static_cast<ui64*>(alloca(size64_n()*UI64_SIZE));
-	ui64* ru = static_cast<ui64*>(alloca(size64_m()*UI64_SIZE));
+	ui32* ru  = static_cast<ui32*>(alloca(size_m()  *UI32_SIZE));
 
 	ui32 u = 0;
 	ui32 i = 0;
-	ui32 i_next = 0;
-	ui64 const*  row_i      = nullptr;
-	ui64 const*  row_i_next = nullptr;
+	ui64 const*  row_i = nullptr;
 
 	while (u < covering.size()) {
 
 		My_Memory::MM_memset(buf, 0, size64_n()*UI64_SIZE);
-		ui64 const* col_u = RE_64(matrix_t_ + covering[u] * size_m());
-		for (ui32 ind = 0; ind < size64_m(); ++ind) {
-			ru[ind] = RE_64(support_rows)[ind] & col_u[ind];			
+		ui32 const* col_u = matrix_t_ + covering[u] * size_m();
+		for (ui32 ind = 0; ind < size_m(); ++ind) {
+			ru[ind] = support_rows[ind] & col_u[ind];			
 		}
 
-		i = binary::find_next(RE_32(ru), m(), 0);		
+		i = binary::find_next(ru, m(), 0);		
 
 		while (i < m()) {
 			row_i = RE_64(matrix_ + i * size_n());
@@ -206,7 +204,7 @@ void Dualizer_OPT::delete_fobidden_cols2() throw() {
 			for (ui32 ind = 0; ind < size64_n(); ++ind) {
 				buf[ind] |= RE_64(cols)[ind] & ~row_i[ind];
 			}
-			i = binary::find_next(RE_32(ru), m(), i + 1);			
+			i = binary::find_next(ru, m(), i + 1);			
 		}
 
 		My_Memory::MM_memcpy(cols, buf, size_n()*UI32_SIZE);
@@ -217,38 +215,38 @@ void Dualizer_OPT::delete_fobidden_cols2() throw() {
 
 void Dualizer_OPT::delete_fobidden_cols3() throw() {
 	ui64* buf = static_cast<ui64*>(alloca(size64_n()*UI64_SIZE));
-	ui64* rj = static_cast<ui64*>(alloca(size64_m()*UI64_SIZE));
+	ui32* rj  = static_cast<ui32*>(alloca(size_m()  *UI32_SIZE));
 
 	ui32 i = 0;
 	ui64 const* row_i = nullptr;
 	ui32 j = 0;
+
+	RE_32(cov)[size_n() - 1] &= mask_n();
 
 	j = binary::find_next(cols, n(), 0);
 	while (j < n()) {
 		//buf = cov
 		My_Memory::MM_memcpy(buf, cov, size_n()*UI32_SIZE);
 
-		const ui64* col_j = RE_64(matrix_t_ + j * size_m());
+		const ui32* col_j = matrix_t_ + j * size_m();
 
-		for (ui32 ind = 0; ind < size64_m(); ++ind) {
-			rj[ind] = RE_64(support_rows)[ind] & ~col_j[ind];
+		for (ui32 ind = 0; ind < size_m(); ++ind) {
+			rj[ind] = support_rows[ind] & ~col_j[ind];
 		}
 
-		i = binary::find_next(RE_32(rj), m(), 0);
-		
+		i = binary::find_next(rj, m(), 0);		
 		while (i < m()) {
 			row_i = RE_64(matrix_ + i*size_n());
 			for (ui32 ind = 0; ind < size64_n(); ++ind) {
 				buf[ind] &= ~row_i[ind];
 			}			
-			i = binary::find_next(RE_32(rj), m(), i+1);
+			i = binary::find_next(rj, m(), i+1);
 		}
 
 		//any
-		ui64 buf1 = 0;
-		buf[size64_n() - 1] &= mask64_n();
-		for (ui32 ind = 0; ind < size64_n(); ++ind) {
-			buf1 |= buf[ind];
+		ui32 buf1 = 0;		
+		for (ui32 ind = 0; ind < size_n(); ++ind) {
+			buf1 |= RE_32(buf)[ind];
 		}
 		if (buf1 != 0)
 			binary::reset(cols, j);
@@ -367,8 +365,7 @@ void Dualizer_OPT::run() {
 	print();
 }
 
-void Dualizer_OPT::init(const binary::Matrix& L, const char* file_name, const char* mode) 
-{
+void Dualizer_OPT::init(const binary::Matrix& L, const char* file_name, const char* mode) {
 	srand(time(0));
 	if (L.width() == 0 || L.height() == 0)
 		throw std::runtime_error("Dualizer_OPT::init::empty matrix");
@@ -383,8 +380,6 @@ void Dualizer_OPT::init(const binary::Matrix& L, const char* file_name, const ch
 	matrix_ = const_cast<ui32*>(L.row(0));//it won't change!
 	m_ = L.height();
 	n_ = L.width();
-//	size_m_ = binary::size(m_);
-//	size_n_ = binary::size(n_);
 
 	ui32* tmp = static_cast<ui32*>(My_Memory::MM_malloc((size_m() + size_n())*UI32_SIZE));
 	ui32* dst = tmp;
@@ -416,7 +411,6 @@ void Dualizer_OPT::init(const binary::Matrix& L, const char* file_name, const ch
 
 	binary::submatrix(matrix_, L.row(0), rows, m_, n_);
 	m_ = m;
-//	size_m_ = binary::size(m_);
 
 	matrix_t_ = dst; dst += n_* binary::size(m);
 	binary::transpose(matrix_t_, matrix_, m_, n_);
