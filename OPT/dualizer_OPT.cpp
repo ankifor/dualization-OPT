@@ -403,6 +403,8 @@ void Dualizer_OPT::init(const binary::Matrix& L, const char* file_name, const ch
 		p_file = fopen(file_name, mode);
 		if (p_file == nullptr)
 			throw std::runtime_error(string("Dualizer_OPT::init::") + std::strerror(errno));
+		//file_buffer_ = static_cast<char*>(My_Memory::MM_malloc(1024));
+		//setbuf(p_file, file_buffer_);
 	}
 	//prepare pool_: a place to store all data
 	m_ = L.height();
@@ -451,6 +453,8 @@ void Dualizer_OPT::clear() {
 		fclose(p_file);
 	if (pool_ != nullptr)
 		My_Memory::MM_free(pool_);
+	if (file_buffer_ != nullptr)
+		My_Memory::MM_free(file_buffer_);
 	covering.~Covering();
 	My_Memory::MM_memset(this, 0, sizeof(Dualizer_OPT));
 }

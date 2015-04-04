@@ -99,7 +99,7 @@ public:
 	~Dualizer_OPT() { clear(); }
 
 	//preprocesses matrix, allocates memory, set matrix_, matrix_t_, m_, n_, etc
-	void init(const binary::Matrix& L, const char* file_name = nullptr, const char* mode = "w");
+	void init(const binary::Matrix& L, const char* file_name = nullptr, const char* mode = "wb");
 	void clear() throw();
 	void run();
 	void print() {
@@ -145,21 +145,17 @@ private:
 	ui32* pool_;
 
 	ui32* matrix_;
-	ui32* matrix_t_;
-
-	ui32* rows;
 	ui32* cols;
+	ui32* rows;
 	ui32* support_rows;
-	ui32* covered_rows;
 	ui32* p_j;
-
-	ui32* cov;
+	ui32* matrix_t_;
+	ui32* cov;	
 	Covering covering;
 
 	ui32 m_;
 	ui32 n_;
-	//ui32 size32_n_;
-	//ui32 size32_m_;
 	ui32 n_coverings;
 	FILE* p_file;
+	char* file_buffer_;
 };
