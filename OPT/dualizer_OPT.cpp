@@ -186,38 +186,46 @@ void Dualizer_OPT::delete_fobidden_cols2() throw() {
 	ui64* buf = static_cast<ui64*>(alloca(size64_n()*UI64_SIZE));
 	ui32* ru  = static_cast<ui32*>(alloca(size_m()  *UI32_SIZE));
 
-	ui32 u = 0;
-	ui32 i1, i2 = 0;
+	ui32 u = 0;//for covering
+	ui32 i = 0;//for ru
+	ui32 i_next = 0;//for ru
 	ui32 size64_n_ = size64_n();
-	ui32 ind = 0;
-	ui64 const*  row_i1 = nullptr;
+	ui32 ind = 0;//for vector indexing
+	ui64 const* row_i      = nullptr;
+	ui64 const* row_i_next = nullptr;
+	ui32 const* col_u      = nullptr;
 	My_Memory::MM_memset(buf, ~0, size64_n()*UI64_SIZE);
 
 	while (u < covering.size()) {
 		
-		ui32 const* col_u = matrix_t_ + covering[u] * size_m();
+		col_u = matrix_t_ + covering[u] * size_m();
 		ind = 0;
 		do {
 			ru[ind] = support_rows[ind] & col_u[ind];			
 			++ind;
 		} while (ind < size_m());
-		
-		
-		i1 = binary::find_next(ru, m(), 0);
-		while (i1 < m()) {					
-			row_i1 = RE_64(matrix_ + i1 * size_n());//how to avoid multiplication?			
-			ind = 0;
+
+		i = binary::find_next(ru, m(), 0);
+		row_i = RE_64(matrix_ + i * size_n());
+		while (i < m()) {		
+			i_next = binary::find_next(ru, m(), i + 1);
+			//imul during the following loop
+			row_i_next = RE_64(matrix_ + i_next * size_n());
+
+			ind = 0;			
 			do {
-				buf[ind] &= row_i1[ind];
+				buf[ind] &= row_i[ind];
 				++ind;
 			} while (ind < size64_n_);		
-			i1 = binary::find_next(ru, m(), i1 + 1);
+			
+			row_i = row_i_next;
+			i = i_next;
 		} 
 
 		ind = 0;
 		do {
 			cols[ind] &= ~RE_32(buf)[ind];
-			RE_32(buf)[ind] = ~0;
+			RE_32(buf)[ind] = ui32(~0);
 			++ind;
 		} while (ind < size_n());
 

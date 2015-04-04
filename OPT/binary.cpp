@@ -25,22 +25,19 @@ ui32 binary::popcount(const ui32* p0, ui32 bitsize) {
 		return sum;
 }
 
-ui32 binary::find_next(const ui32* p0, ui32 bitsize, ui32 bit) {
+ui32 binary::find_next(const ui32* p, ui32 bitsize, ui32 bit) {
     assert(bitsize > 0);		
     ui32 ind = bit >> UI64_LOG2BIT;
     ui32 offset = bit & UI64_MASK;
-		const ui64* p = RE_C64(p0);
 
-    ui64 buf = (p[ind] >> offset) << offset;
-		if (buf != 0) {
-			offset = _tzcnt_u64(buf);//UI32_BITS==32
-		} else {
+		ui64 buf = (RE_C64(p)[ind] >> offset) << offset;
+		if (buf == 0) {
 			do {
 				++ind;
-			} while ( (ind < size64(bitsize)) & (p[ind]== 0) );
-			offset = _tzcnt_u64(p[ind]);//UI32_BITS==32
+				buf = RE_C64(p)[ind];
+			} while ((ind < size64(bitsize)) & (buf == 0));
 		}	
-		
+		offset = _tzcnt_u64(buf);
     return (ind << UI64_LOG2BIT) + offset;
 
 }

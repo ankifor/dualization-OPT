@@ -4,16 +4,6 @@
 
 namespace binary {
 
-	inline ui32 test_zero(ui32 x) {
-		ui32 tmp = (x | (~x + 1)) >> (UI32_BITS - 1);
-		return tmp ^ 1;
-	}
-
-	inline ui32 test_nonzero(ui32 x) {
-		ui32 tmp = (x | (~x + 1)) >> (UI32_BITS - 1);
-		return tmp;
-	}
-
 	inline ui32 size(ui32 bitsize) { return (bitsize + UI32_BITS - 1) >> UI32_LOG2BIT; }
 	inline ui32 size64(ui32 bitsize) { return (bitsize + UI64_BITS - 1) >> UI64_LOG2BIT; }
 	inline ui32 mask(ui32 bitsize) { return UI32_ALL >> (UI32_BITS - bitsize & UI32_MASK); }
