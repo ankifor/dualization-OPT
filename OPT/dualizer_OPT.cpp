@@ -59,7 +59,8 @@ void Dualizer_OPT::update_covered_and_support_rows(ui32 j) throw() {
 	const ui32* col_j = matrix_t_ + j * size32_m();
 	ui32 ind = 0;
 	do {
-		support_rows[ind] = (~rows[ind] ^ col_j[ind]) & (rows[ind] | support_rows[ind]);
+		//support_rows[ind] = (~rows[ind] ^ col_j[ind]) & (rows[ind] | support_rows[ind]);
+		support_rows[ind] ^= (rows[ind] ^ support_rows[ind]) & col_j[ind];
 		rows[ind] &= ~col_j[ind];
 		++ind;
 	} while (ind < size32_m());
