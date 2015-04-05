@@ -27,8 +27,6 @@ void main(int argc, char** argv) {
 	binary::Matrix L;
 	Dualizer_OPT solver;
 	try {	
-
-#ifdef NDEBUG
 		//clock_t begin = clock();
 		L.read(argv[1]);
 		solver.init(L, argv[2]);
@@ -36,11 +34,6 @@ void main(int argc, char** argv) {
 		//clock_t end = clock();
 		//double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
 		//cout << "Elapsed time: " << elapsed_secs << endl;
-#else
-		L.read("mat.txt");
-		solver.init(L, "res.txt");
-		solver.run();
-#endif
 
 	} catch (runtime_error& rte) {
 		cout << rte.what() << " sec" << endl;
