@@ -146,45 +146,53 @@ void Dualizer_OPT::delete_le_rows() throw() {
 
 void Dualizer_OPT::delete_fobidden_cols() throw() {
 	ui32 cols_count = binary::popcount(cols, n());
-	ui32 cov_count = covering.size();
+	//if (cols_count < cov_count) {
+	if (cols_count > 1) {
+		delete_fobidden_cols2(); 		
+	} else if(cols_count == 1) {
+		delete_fobidden_cols1();
+	}
+}
 
-	if (cols_count < cov_count) {
-		delete_fobidden_cols3();
-	} else {
-		delete_fobidden_cols2();
+void Dualizer_OPT::delete_fobidden_cols1() throw() {
+	//popcount(cols)==1
+	ui32 u = 0;
+	ui32 j = 0;
+	ui32 ind = 0;
+	ui32 buf = 0;
+	ui32 const* col_u = nullptr;
+	ui32 const* col_j = nullptr;
+
+	j = binary::find_next(cols, n(), 0);
+	col_j = matrix_t_ + j * size32_m();
+	ui32* ru = static_cast<ui32*>(alloca(size32_m() * UI32_SIZE));
+	support_rows[size32_m() - 1] &= mask32_m();
+
+	ind = 0;
+	do {
+		ru[ind] = ~col_j[ind] & support_rows[ind];
+		++ind;
+	} while (ind < size32_m());
+
+	u = 0;
+	while (u < covering.size()) {
+		col_u = matrix_t_ + covering[u] * size32_m();
+
+		buf = 0;
+		ind = 0;
+		do {		 
+			buf |= ru[ind] & col_u[ind];
+			++ind;
+		} while (ind < size32_m());
+
+		if (buf == 0) {
+			binary::reset(cols, j);
+			break;
+		}
+		++u;
 	}
 
 }
-
-//void Dualizer_OPT::delete_fobidden_cols1() throw() {
-//	ui32 u = 0;
-//	ui32 ind = 0;
-//
-//	const_cast<ui32*>(support_rows)[size32_m() - 1] &= mask32_m();
-//
-//	while (u < covering.size()) {
-//		const ui32* col_u = matrix_t_ + covering[u] * size32_m();
-//
-//		ui32 j = binary::find_next(cols, n(), 0);
-//		while (j < n()) {
-//			const ui32* col_j = matrix_t_ + j * size32_m();
-//
-//			ui32 buf = UI32_ALL;
-//			ind = 0;
-//			while (ind < size32_m()) {
-//				buf &= col_j[ind] | ~(col_u[ind] & support_rows[ind]);
-//				++ind;
-//			}
-//
-//			if (buf == UI32_ALL)
-//				binary::reset(cols, j);
-//
-//			j = binary::find_next(cols, n(), j + 1);
-//		}
-//		++u;
-//	}
-//
-//}
 
 void Dualizer_OPT::delete_fobidden_cols2() throw() {
 	ui64* buf = static_cast<ui64*>(alloca(size64_n()*UI64_SIZE));
@@ -238,61 +246,50 @@ void Dualizer_OPT::delete_fobidden_cols2() throw() {
 
 }
 
-void Dualizer_OPT::delete_fobidden_cols3() throw() {
-	ui32* buf = static_cast<ui32*>(alloca(size32_n()*UI32_SIZE));
-	ui32* rj  = static_cast<ui32*>(alloca(size32_m()  *UI32_SIZE));
-
-	ui32 i = 0;
-	ui32 const* row_i = nullptr;
-	ui32 j = 0;
-	ui32 ind = 0;
-	ui32 size32_n_ = size32_n();
-	
-	cov[size32_n() - 1] &= mask32_n();
-	My_Memory::MM_memcpy(buf, cov, size32_n()*UI32_SIZE);
-
-	j = binary::find_next(cols, n(), 0);
-	while (j < n()) {
-		const ui32* col_j = matrix_t_ + j * size32_m();
-
-		for (ui32 ind = 0; ind < size32_m(); ++ind) {
-			rj[ind] = support_rows[ind] & ~col_j[ind];
-		}
-
-		i = binary::find_next(rj, m(), 0);		
-		while (i < m()) {
-			row_i = RE_32(matrix_ + i*size32_n());
-			ind = 0;
-			do {
-				buf[ind] &= ~row_i[ind];
-				++ind;
-			} while (ind < size32_n_);
-			i = binary::find_next(rj, m(), i+1);
-		}
-
-		//any
-		ui32 buf1 = 0;	
-		ind = 0;
-		do {
-			buf1 |= buf[ind];
-			buf[ind] = cov[ind];
-			++ind;
-		} while (ind < size32_n());
-
-		//if (buf1 != 0) {
-		//	binary::reset(cols, j);
-		//}
-		{
-			ui32 ind_j = j >> UI32_LOG2BIT;
-			ui32 offset_j = j & UI32_MASK;
-			ui32 buf_j = (buf1 != 0) << offset_j;
-			buf_j = ~buf_j;
-			cols[ind_j] &= buf_j;
-		}
-		j = binary::find_next(cols, n(), j + 1);
-	}
-
-}
+//void Dualizer_OPT::delete_fobidden_cols3() throw() {
+//	//popcount(cols) == 1
+//	ui32* buf = static_cast<ui32*>(alloca(size32_n()*UI32_SIZE));
+//	ui32* rj  = static_cast<ui32*>(alloca(size32_m()  *UI32_SIZE));
+//
+//	ui32 i = 0;
+//	ui32 const* row_i = nullptr;
+//	ui32 j = 0;
+//	ui32 ind = 0;
+//	ui32 size32_n_ = size32_n();
+//	
+//	cov[size32_n() - 1] &= mask32_n();
+//	My_Memory::MM_memcpy(buf, cov, size32_n()*UI32_SIZE);
+//
+//	j = binary::find_next(cols, n(), 0);
+//	const ui32* col_j = matrix_t_ + j * size32_m();
+//
+//	for (ui32 ind = 0; ind < size32_m(); ++ind) {
+//		rj[ind] = support_rows[ind] & ~col_j[ind];
+//	}
+//
+//	i = binary::find_next(rj, m(), 0);		
+//	while (i < m()) {
+//		row_i = RE_32(matrix_ + i*size32_n());
+//		ind = 0;
+//		do {
+//			buf[ind] &= ~row_i[ind];
+//			++ind;
+//		} while (ind < size32_n_);
+//		i = binary::find_next(rj, m(), i+1);
+//	}
+//
+//	//any
+//	ui32 buf1 = 0;	
+//	ind = 0;
+//	do {
+//		buf1 |= buf[ind];
+//		++ind;
+//	} while (ind < size32_n());
+//
+//	if (buf1 != 0) {
+//		binary::reset(cols, j);
+//	}
+//}
 
 //char Dualizer_OPT::create_search_set(ui32* set) throw() {
 //	ui32* unobserved = static_cast<ui32*>(alloca(size32_m()*UI32_SIZE));
@@ -327,56 +324,56 @@ void Dualizer_OPT::delete_fobidden_cols3() throw() {
 //
 //}
 
-void Dualizer_OPT::delete_fobidden_cols4() throw() {
-	ui32 size_cov = covering.size();
-	ui32* support_i = static_cast<ui32*>(alloca(size32_n() * UI32_SIZE));
-	ui32* buf = static_cast<ui32*>(alloca(size_cov * size32_n() * UI32_SIZE));
-	My_Memory::MM_memset(buf, ~0, size_cov * size32_n() * UI32_SIZE);
-
-	ui32 ind = 0;
-	ui32 u = 0;
-	ui32 num = 0;
-	ui32 i = binary::find_next(support_rows, m(), 0);
-	ui32* buf_u = nullptr;
-	while (i < m()) {
-		ui32 const* row_i = matrix_ + i * size32_n();
-		ind = 0;
-		do {
-			support_i[ind] = row_i[ind] & cov[ind];
-			++ind;
-		} while (ind < size32_n());
-		//find column for which i-th row is support-row
-		num = binary::find_next(support_i, n(), 0);
-		//restore number of that column in covering
-		buf_u = buf;
-		u = 0;
-		while (covering[u] != num) {
-			++u;
-			buf_u += size32_n();
-		}
-
-		ind = 0;
-		do {
-			buf_u[ind] &= row_i[ind];
-			++ind;
-		} while (ind < size32_n());
-		
-		i = binary::find_next(support_rows, m(), i + 1);
-	}
-	//update cols
-	u = 0;
-	buf_u = buf;
-	do {		
-		ind = 0;
-		do {
-			cols[ind] &= ~buf_u[ind];
-			++ind;
-		} while (ind < size32_n());
-		buf_u += size32_n();
-		++u;
-	} while (u < covering.size());
-
-}
+//void Dualizer_OPT::delete_fobidden_cols4() throw() {
+//	ui32 size_cov = covering.size();
+//	ui32* support_i = static_cast<ui32*>(alloca(size32_n() * UI32_SIZE));
+//	ui32* buf = static_cast<ui32*>(alloca(size_cov * size32_n() * UI32_SIZE));
+//	My_Memory::MM_memset(buf, ~0, size_cov * size32_n() * UI32_SIZE);
+//
+//	ui32 ind = 0;
+//	ui32 u = 0;
+//	ui32 num = 0;
+//	ui32 i = binary::find_next(support_rows, m(), 0);
+//	ui32* buf_u = nullptr;
+//	while (i < m()) {
+//		ui32 const* row_i = matrix_ + i * size32_n();
+//		ind = 0;
+//		do {
+//			support_i[ind] = row_i[ind] & cov[ind];
+//			++ind;
+//		} while (ind < size32_n());
+//		//find column for which i-th row is support-row
+//		num = binary::find_next(support_i, n(), 0);
+//		//restore number of that column in covering
+//		buf_u = buf;
+//		u = 0;
+//		while (covering[u] != num) {
+//			++u;
+//			buf_u += size32_n();
+//		}
+//
+//		ind = 0;
+//		do {
+//			buf_u[ind] &= row_i[ind];
+//			++ind;
+//		} while (ind < size32_n());
+//		
+//		i = binary::find_next(support_rows, m(), i + 1);
+//	}
+//	//update cols
+//	u = 0;
+//	buf_u = buf;
+//	do {		
+//		ind = 0;
+//		do {
+//			cols[ind] &= ~buf_u[ind];
+//			++ind;
+//		} while (ind < size32_n());
+//		buf_u += size32_n();
+//		++u;
+//	} while (u < covering.size());
+//
+//}
 
 void Dualizer_OPT::run() {
 	covering.reserve(20, n());
@@ -388,7 +385,8 @@ void Dualizer_OPT::run() {
 	Stack stack(2*size32_m() + size32_n() + 1, 16);
 	stack.push(state);
 	//helps to avoid double copying while descent pushing
-	bool up_to_date = true;
+	char up_to_date = true;
+	bool do_not_pop = false;
 	//in-depth tree search
 	while (!stack.empty()) {		
 		if (!up_to_date)
@@ -397,7 +395,11 @@ void Dualizer_OPT::run() {
 		//any children left?
 		if (*p_j >= n()) {
 			//all children are finished, go up
-			stack.pop();
+			if (!do_not_pop) {
+				stack.pop();
+			} else {
+				do_not_pop = false;
+			}
 			if (stack.size() > 0) {
 				binary::reset(cov, covering.top());
 				covering.remove_last();				
@@ -431,9 +433,13 @@ void Dualizer_OPT::run() {
 		if (binary::any(cols, n())) {
 			delete_le_rows();
 			delete_zero_cols();
+			//save current state
+			stack.push(state);
+		} else {
+			do_not_pop = true;
 		}
-		//save current state
-		stack.push(state);
+		
+		
 		up_to_date = true;		
 	}
 	print();
