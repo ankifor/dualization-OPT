@@ -114,6 +114,8 @@ protected:
 	void update_covered_and_support_rows(ui32 j) throw();
 
 	void delete_zero_cols() throw();
+	void delete_zero_cols1() throw();
+	void delete_zero_cols2() throw();
 	
 	void delete_fobidden_cols()  throw();
 	void delete_fobidden_cols1() throw();

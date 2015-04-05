@@ -66,29 +66,41 @@ void Dualizer_OPT::update_covered_and_support_rows(ui32 j) throw() {
 	} while (ind < size32_m());
 }
 
-//void Dualizer_OPT::delete_zero_cols() throw() {
-//	ui32 j = binary::find_next(cols, n(), 0);
-//
-//	while (j < n()) {
-//		const ui64* col_j = RE_64(matrix_t_ + j * size32_m());
-//		ui64 buf = 0;
-//		ui32 ind = 0;
-//		while (ind < size64_m()) {
-//			buf |= RE_64(rows)[ind] & col_j[ind];
-//			++ind;
-//		}
-//		buf |= RE_64(rows)[ind] & col_j[ind] & mask64_m();
-//
-//		if (buf == 0)
-//			binary::reset(cols, j);
-//			
-//
-//		j = binary::find_next(cols, n(), j + 1);
-//	}
-//
-//}
-
 void Dualizer_OPT::delete_zero_cols() throw() {
+	//ui32 n1 = binary::popcount(cols, n()) * m();
+	//ui32 n2 = binary::popcount(rows, m()) * n();
+	
+	//if (n1 < n2) {
+	//	delete_zero_cols1();
+	//} else {
+		delete_zero_cols2();
+	//}
+
+}
+
+void Dualizer_OPT::delete_zero_cols1() throw() {
+	ui32 j = binary::find_next(cols, n(), 0);
+
+	while (j < n()) {
+		const ui64* col_j = RE_64(matrix_t_ + j * size32_m());
+		ui64 buf = 0;
+		ui32 ind = 0;
+		while (ind < size64_m()) {
+			buf |= RE_64(rows)[ind] & col_j[ind];
+			++ind;
+		}
+		buf |= RE_64(rows)[ind] & col_j[ind] & mask64_m();
+
+		if (buf == 0)
+			binary::reset(cols, j);
+			
+
+		j = binary::find_next(cols, n(), j + 1);
+	}
+
+}
+
+void Dualizer_OPT::delete_zero_cols2() throw() {
 	ui32* buf = static_cast<ui32*>(alloca(size32_n()*UI32_SIZE));
 	My_Memory::MM_memset(buf, 0, size32_n()*UI32_SIZE);
 
@@ -148,9 +160,9 @@ void Dualizer_OPT::delete_le_rows() throw() {
 void Dualizer_OPT::delete_fobidden_cols() throw() {
 	ui32 cols_count = binary::popcount(cols, n());
 	//if (cols_count < cov_count) {
-	if (cols_count > 1) {
+	if (cols_count * m() > 2 * n()) {
 		delete_fobidden_cols2(); 		
-	} else if(cols_count == 1) {
+	} else if(cols_count > 0) {
 		delete_fobidden_cols1();
 	}
 }
@@ -163,35 +175,38 @@ void Dualizer_OPT::delete_fobidden_cols1() throw() {
 	ui32 buf = 0;
 	ui32 const* col_u = nullptr;
 	ui32 const* col_j = nullptr;
-
-	j = binary::find_next(cols, n(), 0);
-	col_j = matrix_t_ + j * size32_m();
 	ui32* ru = static_cast<ui32*>(alloca(size32_m() * UI32_SIZE));
 	support_rows[size32_m() - 1] &= mask32_m();
 
-	ind = 0;
+	j = binary::find_next(cols, n(), 0);
 	do {
-		ru[ind] = ~col_j[ind] & support_rows[ind];
-		++ind;
-	} while (ind < size32_m());
+		col_j = matrix_t_ + j * size32_m();		
 
-	u = 0;
-	while (u < covering.size()) {
-		col_u = matrix_t_ + covering[u] * size32_m();
-
-		buf = 0;
 		ind = 0;
-		do {		 
-			buf |= ru[ind] & col_u[ind];
+		do {
+			ru[ind] = ~col_j[ind] & support_rows[ind];
 			++ind;
 		} while (ind < size32_m());
 
-		if (buf == 0) {
-			binary::reset(cols, j);
-			break;
+		u = 0;
+		while (u < covering.size()) {
+			col_u = matrix_t_ + covering[u] * size32_m();
+
+			buf = 0;
+			ind = 0;
+			do {
+				buf |= ru[ind] & col_u[ind];
+				++ind;
+			} while (ind < size32_m());
+
+			if (buf == 0) {
+				binary::reset(cols, j);
+				break;
+			}
+			++u;
 		}
-		++u;
-	}
+		j = binary::find_next(cols, n(), j+1);
+	} while (j < n());
 
 }
 
