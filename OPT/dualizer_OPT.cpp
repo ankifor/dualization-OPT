@@ -61,7 +61,6 @@ void Dualizer_OPT::update_covered_and_support_rows(ui32 j) throw() {
 	do {
 		support_rows[ind] = (~rows[ind] ^ col_j[ind]) & (rows[ind] | support_rows[ind]);
 		rows[ind] &= ~col_j[ind];
-		//covered_rows[ind] |= col_j[ind];
 		++ind;
 	} while (ind < size32_m());
 }
@@ -240,16 +239,16 @@ void Dualizer_OPT::delete_fobidden_cols2() throw() {
 }
 
 void Dualizer_OPT::delete_fobidden_cols3() throw() {
-	ui64* buf = static_cast<ui64*>(alloca(size64_n()*UI64_SIZE));
+	ui32* buf = static_cast<ui32*>(alloca(size32_n()*UI32_SIZE));
 	ui32* rj  = static_cast<ui32*>(alloca(size32_m()  *UI32_SIZE));
 
 	ui32 i = 0;
-	ui64 const* row_i = nullptr;
+	ui32 const* row_i = nullptr;
 	ui32 j = 0;
 	ui32 ind = 0;
-	ui32 size64_n_ = size64_n();
+	ui32 size32_n_ = size32_n();
 	
-	RE_32(cov)[size32_n() - 1] &= mask32_n();
+	cov[size32_n() - 1] &= mask32_n();
 	My_Memory::MM_memcpy(buf, cov, size32_n()*UI32_SIZE);
 
 	j = binary::find_next(cols, n(), 0);
@@ -262,21 +261,21 @@ void Dualizer_OPT::delete_fobidden_cols3() throw() {
 
 		i = binary::find_next(rj, m(), 0);		
 		while (i < m()) {
-			row_i = RE_64(matrix_ + i*size32_n());
+			row_i = RE_32(matrix_ + i*size32_n());
 			ind = 0;
 			do {
 				buf[ind] &= ~row_i[ind];
 				++ind;
-			} while (ind < size64_n_);
+			} while (ind < size32_n_);
 			i = binary::find_next(rj, m(), i+1);
 		}
 
 		//any
-		ui64 buf1 = 0;	
+		ui32 buf1 = 0;	
 		ind = 0;
 		do {
-			buf1 |= RE_32(buf)[ind];
-			RE_32(buf)[ind] = cov[ind];
+			buf1 |= buf[ind];
+			buf[ind] = cov[ind];
 			++ind;
 		} while (ind < size32_n());
 
@@ -408,7 +407,7 @@ void Dualizer_OPT::init(const binary::Matrix& L, const char* file_name, const ch
 	}
 	//prepare pool_: a place to store all data
 	m_ = L.height();
-	n_ = L.width();
+	n_ = L.width();	
 	ui32 pool_size  =
 		m_ * size32_n() + //matrix_
 		size32_n()      + //cols
@@ -420,12 +419,12 @@ void Dualizer_OPT::init(const binary::Matrix& L, const char* file_name, const ch
 	pool_ = SC_32(My_Memory::MM_malloc(pool_size * UI32_SIZE));
 	//prepare data for delete_le_rows
 	dst = pool_ + m_ * size32_n();
+	My_Memory::MM_memset(dst, ~0, (size32_n() + size32_m()) * UI32_SIZE);
 	cols = dst; dst += size32_n();
-	rows = dst; dst += size32_m();
-	My_Memory::MM_memset(rows, ~0, (size32_n() + size32_m()) * UI32_SIZE);
+	rows = dst; dst += size32_m();	
 	matrix_ = const_cast<ui32*>(L.row(0));//data is not changed
 	//delete_le_rows
-	delete_le_rows();			
+	delete_le_rows();		
 	//prepare data for run()
 	dst = pool_; //-V519
 	//matrix_
