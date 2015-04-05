@@ -119,6 +119,7 @@ protected:
 	void delete_fobidden_cols1() throw();
 	void delete_fobidden_cols2() throw();
 	void delete_fobidden_cols3() throw();
+	void delete_fobidden_cols4() throw();
 	
 	void delete_le_rows() throw();
 

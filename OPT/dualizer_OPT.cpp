@@ -327,6 +327,56 @@ void Dualizer_OPT::delete_fobidden_cols3() throw() {
 //
 //}
 
+void Dualizer_OPT::delete_fobidden_cols4() throw() {
+	ui32 size_cov = covering.size();
+	ui32* support_i = static_cast<ui32*>(alloca(size32_n() * UI32_SIZE));
+	ui32* buf = static_cast<ui32*>(alloca(size_cov * size32_n() * UI32_SIZE));
+	My_Memory::MM_memset(buf, ~0, size_cov * size32_n() * UI32_SIZE);
+
+	ui32 ind = 0;
+	ui32 u = 0;
+	ui32 num = 0;
+	ui32 i = binary::find_next(support_rows, m(), 0);
+	ui32* buf_u = nullptr;
+	while (i < m()) {
+		ui32 const* row_i = matrix_ + i * size32_n();
+		ind = 0;
+		do {
+			support_i[ind] = row_i[ind] & cov[ind];
+			++ind;
+		} while (ind < size32_n());
+		//find column for which i-th row is support-row
+		num = binary::find_next(support_i, n(), 0);
+		//restore number of that column in covering
+		buf_u = buf;
+		u = 0;
+		while (covering[u] != num) {
+			++u;
+			buf_u += size32_n();
+		}
+
+		ind = 0;
+		do {
+			buf_u[ind] &= row_i[ind];
+			++ind;
+		} while (ind < size32_n());
+		
+		i = binary::find_next(support_rows, m(), i + 1);
+	}
+	//update cols
+	u = 0;
+	buf_u = buf;
+	do {		
+		ind = 0;
+		do {
+			cols[ind] &= ~buf_u[ind];
+			++ind;
+		} while (ind < size32_n());
+		buf_u += size32_n();
+		++u;
+	} while (u < covering.size());
+
+}
 
 void Dualizer_OPT::run() {
 	covering.reserve(20, n());
