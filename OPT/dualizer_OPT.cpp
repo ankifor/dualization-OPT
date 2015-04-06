@@ -203,7 +203,7 @@ void Dualizer_OPT::delete_fobidden_cols() throw() {
 }
 
 void Dualizer_OPT::delete_fobidden_cols1() throw() {
-	//popcount(cols)==1
+	//this function is efficient, when popcount(cols) is low
 	ui32 u = 0;
 	ui32 j = 0;
 	ui32 ind = 0;
@@ -246,16 +246,16 @@ void Dualizer_OPT::delete_fobidden_cols1() throw() {
 }
 
 void Dualizer_OPT::delete_fobidden_cols2() throw() {
-	ui64* buf = static_cast<ui64*>(alloca(size64_n()*UI64_SIZE));
-	ui32* ru  = static_cast<ui32*>(alloca(size32_m()  *UI32_SIZE));
+	ui32* buf = static_cast<ui32*>(alloca(size32_n() * UI32_SIZE));
+	ui32* ru  = static_cast<ui32*>(alloca(size32_m() * UI32_SIZE));
 
 	ui32 u = 0;//for covering
 	ui32 i = 0;//for ru
-	ui32 size64_n_ = size64_n();
+	ui32 size32_n_ = size32_n();
 	ui32 ind = 0;//for vector indexing
-	ui64 const* row_i      = nullptr;
+	ui32 const* row_i      = nullptr;
 	ui32 const* col_u      = nullptr;
-	My_Memory::MM_memset(buf, ~0, size64_n()*UI64_SIZE);
+	My_Memory::MM_memset(buf, ~0, size32_n_ * UI32_SIZE);
 
 	while (u < covering.size()) {
 		
@@ -269,22 +269,22 @@ void Dualizer_OPT::delete_fobidden_cols2() throw() {
 		i = binary::find_next(ru, m(), 0);
 		
 		while (i < m()) {		
-			row_i = RE_64(matrix_ + i * size32_n());
+			row_i = matrix_ + i * size32_n();
 			ind = 0;			
 			do {
 				buf[ind] &= row_i[ind];
 				++ind;
-			} while (ind < size64_n_);		
+			} while (ind < size32_n_);		
 
 			i = binary::find_next(ru, m(), i+1);
 		} 
 
 		ind = 0;
 		do {
-			cols[ind] &= ~RE_32(buf)[ind];
-			RE_32(buf)[ind] = ui32(~0);
+			cols[ind] &= ~buf[ind];
+			buf[ind] = ui32(~0);
 			++ind;
-		} while (ind < size32_n());
+		} while (ind < size32_n_);
 
 		++u;
 	}
