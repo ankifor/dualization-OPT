@@ -160,23 +160,23 @@ void Dualizer_OPT::delete_zero_cols() throw() {
 void Dualizer_OPT::delete_le_rows() throw() {
 	ui32 i1 = binary::find_next(rows, m(), 0);
 	ui32 i2 = 0;
+	ui32 size32_n_ = size32_n();
+	cols[size32_n_ - 1] &= mask32_n();
 
 	while (i1 < m()) {
-		const ui64* row1 = RE_64(matrix_ + i1 * size32_n());
+		const ui32* row1 = matrix_ + i1 * size32_n_;
 		i2 = binary::find_next(rows, m(), i1 + 1);
 		while (i2 < m()) {
 			
-			const ui64* row2 = RE_64(matrix_ + i2 * size32_n());
-			ui64 buf1 = 0;
-			ui64 buf2 = 0;
+			const ui32* row2 = matrix_ + i2 * size32_n_;
+			ui32 buf1 = 0;
+			ui32 buf2 = 0;
 			ui32 ind = 0;
-			while (ind < size64_n() - 1) {
-				buf1 |=  row1[ind] & ~row2[ind] & RE_64(cols)[ind];
-				buf2 |= ~row1[ind] &  row2[ind] & RE_64(cols)[ind];
+			do {
+				buf1 |=  row1[ind] & ~row2[ind] & cols[ind];
+				buf2 |= ~row1[ind] &  row2[ind] & cols[ind];
 				++ind;
-			}
-			buf1 |=  row1[ind] & ~row2[ind] & RE_64(cols)[ind] & mask64_n();
-			buf2 |= ~row1[ind] &  row2[ind] & RE_64(cols)[ind] & mask64_n();
+			} while (ind < size32_n_);
 
 			if (buf1 == 0) {
 				binary::reset(rows, i2);
@@ -210,27 +210,18 @@ void Dualizer_OPT::delete_fobidden_cols1() throw() {
 	ui32 buf = 0;
 	ui32 const* col_u = nullptr;
 	ui32 const* col_j = nullptr;
-	ui32* ru = static_cast<ui32*>(alloca(size32_m() * UI32_SIZE));
 	support_rows[size32_m() - 1] &= mask32_m();
 
 	j = binary::find_next(cols, n(), 0);
 	do {
 		col_j = matrix_t_ + j * size32_m();		
-
-		ind = 0;
-		do {
-			ru[ind] = ~col_j[ind] & support_rows[ind];
-			++ind;
-		} while (ind < size32_m());
-
 		u = 0;
 		while (u < covering.size()) {
 			col_u = matrix_t_ + covering[u] * size32_m();
-
 			buf = 0;
 			ind = 0;
 			do {
-				buf |= ru[ind] & col_u[ind];
+				buf |= ~col_j[ind] & support_rows[ind] & col_u[ind];
 				++ind;
 			} while (ind < size32_m());
 

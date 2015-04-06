@@ -172,20 +172,18 @@ void binary::Matrix::reserve(ui32 m, ui32 n) {
 	n_ = n;
 }
 
-//void binary::Matrix::random(ui32 m, ui32 n, float d, unsigned seed) {
-//	reserve(m,n);
-//	My_Memory::MM_memset(data_, 0, m*row_size()*UI32_SIZE);
-//	ui32 threshold = ui32(RAND_MAX * d);
-//	if (seed == 0)
-//		seed = static_cast<unsigned>(time(nullptr));
-//	srand(seed);	
-//	for (ui32 i = 0; i < m_; ++i) {
-//		for (ui32 j = 0; j < n_; ++j) {
-//			if (static_cast<ui32>(rand()) < threshold)
-//				set(i, j);
-//		}      
-//	}
-//}
+void binary::Matrix::random(ui32 m, ui32 n, float d, unsigned seed) {
+	reserve(m,n);
+	My_Memory::MM_memset(data_, 0, m*row_size()*UI32_SIZE);
+	ui32 threshold = ui32(RAND_MAX * d);
+	srand(seed);	
+	for (ui32 i = 0; i < m_; ++i) {
+		for (ui32 j = 0; j < n_; ++j) {
+			if (static_cast<ui32>(rand()) < threshold)
+				set(i, j);
+		}      
+	}
+}
 
 /**********************************************************
 io functions
