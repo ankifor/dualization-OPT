@@ -13,6 +13,42 @@
 //	void __fastcall dfc2_internal(ui64* buf, ui64 const* cols, ui32 const* ru, ui32 const* mat, ui32 m, ui32 n);
 //}
 
+//static void divu10(ui32& q, ui32& r) {
+//	ui32 n = q;
+//	q = (q >> 1) + (q >> 2);
+//	q = q + (q >> 4);
+//	q = q + (q >> 8);
+//	q = q + (q >> 16);
+//	q = q >> 3;
+//	r = n - q * 10;
+//	q = q + (r > 9); //-V602
+//	r = n - q * 10;
+//}
+
+void Dualizer_OPT::Covering::append(ui32 q) {
+	assert(q <= 99999);
+
+	data_.push(q);
+
+	char buf[5];
+	ui32 len = 0;
+	ui32 r = 0;
+
+	do {
+		//divu10(q, r);
+		buf[len] = '0' + q % 10 ;
+		q = q / 10;
+		++len;
+	} while (q > 0);
+
+	do {
+		--len;
+		text_.push(buf[len]);
+	} while (len > 0);
+
+	text_.push(' ');
+}
+
 using namespace std;
 
 class Stack {
@@ -66,41 +102,40 @@ void Dualizer_OPT::update_covered_and_support_rows(ui32 j) throw() {
 	} while (ind < size32_m());
 }
 
+//void Dualizer_OPT::delete_zero_cols() throw() {
+//	ui32 n1 = binary::popcount(cols, n()) * m();
+//	ui32 n2 = binary::popcount(rows, m()) * n();
+//	
+//	if (n1 < n2) {
+//		delete_zero_cols1();
+//	} else {
+//		delete_zero_cols2();
+//	}
+//
+//}
+
+//void Dualizer_OPT::delete_zero_cols1() throw() {
+//	rows[size32_m() - 1] &= mask32_m();
+//	ui32 j = binary::find_next(cols, n(), 0);
+//
+//	while (j < n()) {
+//		ui32 const* col_j = matrix_t_ + j * size32_m();
+//		ui32 buf = 0;
+//		ui32 ind = 0;
+//		do {
+//			buf |= rows[ind] & col_j[ind];
+//			++ind;
+//		} while (ind < size32_m());
+//
+//		if (buf == 0)
+//			binary::reset(cols, j);			
+//
+//		j = binary::find_next(cols, n(), j + 1);
+//	}
+//
+//}
+
 void Dualizer_OPT::delete_zero_cols() throw() {
-	//ui32 n1 = binary::popcount(cols, n()) * m();
-	//ui32 n2 = binary::popcount(rows, m()) * n();
-	
-	//if (n1 < n2) {
-	//	delete_zero_cols1();
-	//} else {
-		delete_zero_cols2();
-	//}
-
-}
-
-void Dualizer_OPT::delete_zero_cols1() throw() {
-	ui32 j = binary::find_next(cols, n(), 0);
-
-	while (j < n()) {
-		const ui64* col_j = RE_64(matrix_t_ + j * size32_m());
-		ui64 buf = 0;
-		ui32 ind = 0;
-		while (ind < size64_m()) {
-			buf |= RE_64(rows)[ind] & col_j[ind];
-			++ind;
-		}
-		buf |= RE_64(rows)[ind] & col_j[ind] & mask64_m();
-
-		if (buf == 0)
-			binary::reset(cols, j);
-			
-
-		j = binary::find_next(cols, n(), j + 1);
-	}
-
-}
-
-void Dualizer_OPT::delete_zero_cols2() throw() {
 	ui32* buf = static_cast<ui32*>(alloca(size32_n()*UI32_SIZE));
 	My_Memory::MM_memset(buf, 0, size32_n()*UI32_SIZE);
 

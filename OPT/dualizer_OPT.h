@@ -23,27 +23,7 @@ protected:
 			}
 		}
 
-		void append(ui32 num) {
-			assert(num <= 99999);
-
-			data_.push(num);
-
-			char buf[5];
-			ui32 len = 0;
-
-			do {
-				buf[len] = '0' + num % 10;
-				num /= 10;
-				++len;
-			} while (num > 0);
-
-			do {
-#pragma warning(suppress: 6385)
-				text_.push(buf[--len]);
-			} while (len > 0);
-
-			text_.push(' ');
-		}
+		void append(ui32 num);
 
 		void remove_last() {
 			assert(data_.size() > 0);
