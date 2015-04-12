@@ -2,6 +2,7 @@
 #include <cstdio>
 #include "my_int.h"
 #include "stack_array.h"
+#include "pool_stack.h"
 #include "binary.h"
 
 class Dualizer_OPT {
@@ -25,6 +26,22 @@ protected:
 		ui32* frequency_ = nullptr;
 	};
 
+	class Stack {
+	public:
+		void push(const ui32* pool);
+		void update_j_next(ui32 j_next, ui32 offset);
+		void reset_cols(ui32 j, ui32 offset);
+		void pop() throw();
+		void copy_top(ui32* pool) throw();
+		bool empty() const throw();
+		int size() const throw();
+		void reserve(ui32 pool_size, ui32 size = 16);
+		Stack();
+		~Stack();
+	private:
+		Pool_Stack pool_stack_;
+	};
+
 public:
 
 	Dualizer_OPT() { My_Memory::MM_memset(this, 0, sizeof(Dualizer_OPT)); }
@@ -33,7 +50,7 @@ public:
 	//preprocesses matrix, allocates memory, set matrix_, matrix_t_, m_, n_, etc
 	void init(const binary::Matrix& L, const char* file_name = nullptr, const char* mode = "wb");
 	void clear() throw();
-	void run();
+	void run(ui32 j = ui32(~0));
 	void print() {
 		printf("%d\n", n_coverings);
 		if (p_file == nullptr)
@@ -78,6 +95,7 @@ private:
 
 private:
 	ui32* pool_;
+	Stack stack;
 
 	ui32* matrix_;
 	ui32* cols;

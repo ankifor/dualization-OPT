@@ -32,11 +32,11 @@ void main(int argc, char** argv) {
 		L.random(m, n, d);
 		L.print(argv[1], "bm");
 		L.print(argv[1], "hg");
-		L.print_bm(stdout);
-		fputc('\n', stdout);
-		u = atoi(argv[6]);
-		L1.random_stripe(L, u);
-		L1.print_bm(stdout);
+		//L.print_bm(stdout);
+		//fputc('\n', stdout);
+		//u = atoi(argv[6]);
+		//L1.random_stripe(L, u);
+		//L1.print_bm(stdout);
 
 	} catch (runtime_error& rte) {
 		std::cout << rte.what();

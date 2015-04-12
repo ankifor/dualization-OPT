@@ -5,11 +5,17 @@
 
 class Pool_Stack {
 public:
-	Pool_Stack(ui32 element_size) :
-		start_(nullptr),
-		top_(nullptr),
-		element_size_(element_size),
-		capacity_(0) {}
+	Pool_Stack() {
+		start_ = nullptr;
+		top_ = nullptr;
+		element_size_ = 0; 
+		capacity_ = 0;
+	}
+
+	void set_element_size(ui32 element_size) {
+		element_size_ = element_size;
+	}
+
 	~Pool_Stack() throw() { reserve(0); }
 
 	void reserve(ui32 capacity) {
