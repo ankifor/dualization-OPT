@@ -57,6 +57,7 @@ public:
 			covering.print_freq(n());
 	}
 	ui32* get_freq() { return covering.get_freq(); }
+	ui32 get_num() { return n_coverings;  }
 
 protected:
 

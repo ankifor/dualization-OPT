@@ -18,9 +18,9 @@ ui32 binary::popcount(const ui32* p0, ui32 bitsize) {
 		const ui64* p = reinterpret_cast<const ui64*>(p0);
 
 		for (ui32 ind = 0; ind < sz - 1; ++ind) {
-			sum += __popcnt64(p[ind]);
+			sum += (ui32) __popcnt64(p[ind]);
 		}
-		sum += __popcnt64(p[sz - 1] & mask64(bitsize));
+		sum += (ui32) __popcnt64(p[sz - 1] & mask64(bitsize));
 
 		return sum;
 }
@@ -37,7 +37,7 @@ ui32 binary::find_next(const ui32* p, ui32 bitsize, ui32 bit) {
 				buf = RE_C64(p)[ind];
 			} while ((ind < size64(bitsize)) & (buf == 0));
 		}	
-		offset = _tzcnt_u64(buf);
+		offset = (ui32) _tzcnt_u64(buf);
     return (ind << UI64_LOG2BIT) + offset;
 
 }

@@ -34,6 +34,7 @@ namespace binary {
 
 		//stats
 		inline ui32 row_size() const { return size(n_); }
+		inline ui32 size32() const { return m_ * size(n_); }
 		inline ui32 width() const { return n_; }
 		inline ui32 height() const { return m_; }
 
@@ -46,6 +47,7 @@ namespace binary {
 
 		//constructors
 		Matrix(ui32 m = 0, ui32 n = 0) : data_(nullptr), n_(0), m_(0) { reserve(m, n); }
+		void reserve(ui32 m, ui32 n);
 		Matrix(const Matrix& src) : data_(nullptr), n_(0), m_(0) { copy(src); }
 		//Bool_Matrix(const Bool_Matrix& src, const Bool_Vector& rows);
 		Matrix& operator=(const Matrix& src) { copy(src); return *this; }
@@ -61,8 +63,6 @@ namespace binary {
 		//special functions
 		Matrix& delete_le_rows();
 		Matrix& random_stripe(const Matrix& src, ui32 height);
-	protected:
-		void reserve(ui32 m, ui32 n);
 	protected:
 		ui32* data_;
 		ui32 n_;//matrix width

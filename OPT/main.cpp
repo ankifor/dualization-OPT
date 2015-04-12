@@ -32,6 +32,7 @@ void main(int argc, char** argv) {
 		L.delete_le_rows();
 		solver.init(L, argv[2]);
 		solver.run();
+		solver.print();
 		//clock_t end = clock();
 		//double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
 		//cout << "Elapsed time: " << elapsed_secs << endl;

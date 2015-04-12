@@ -47,7 +47,7 @@ public:
 
 	ui32 size() const throw() {
 		assert(start_ <= top_);
-		return (top_ - start_ + element_size_ - 1) / element_size_;
+		return ui32((top_ - start_ + element_size_ - 1) / element_size_);
 	}
 
 	ui32 element_size() const throw() {

@@ -472,7 +472,7 @@ void Dualizer_OPT::run(ui32 j) {
 	while (!stack.empty()) {		
 		if (!up_to_date)
 			stack.copy_top(state);		
-		if (stack.size() == 1 & j != ui32(~0)) {
+		if ((stack.size() == 1) & (j != ui32(~0))) {
 			*p_j = (binary::at(cols, j) ? j : n());
 		} else {
 			*p_j = binary::find_next(cols, n(), 0);
@@ -482,9 +482,8 @@ void Dualizer_OPT::run(ui32 j) {
 			//all children are finished, go up
 			if (!do_not_pop) {
 				stack.pop();
-			} else {
-				do_not_pop = false;
 			}
+			do_not_pop = false;
 			if (stack.size() > 0) {
 				binary::reset(cov, covering.top());
 				covering.remove_last();				
@@ -493,7 +492,7 @@ void Dualizer_OPT::run(ui32 j) {
 			continue;
 		}
 		//reset j-th column
-		stack.reset_cols(*p_j, cols - state);
+		stack.reset_cols(*p_j, ui32(cols - state));
 		binary::reset(cols, *p_j);
 		//append j to the covering
 		covering.append(*p_j);
@@ -502,7 +501,7 @@ void Dualizer_OPT::run(ui32 j) {
 		update_covered_and_support_rows(*p_j);
 		//modify last processed child number
 		++*p_j;		
-		stack.update_j_next(*p_j, p_j - state);
+		stack.update_j_next(*p_j, ui32(p_j - state));
 		//leaf?
 		if (!binary::any(rows, m())) {
 			covering.print(p_file);
@@ -522,12 +521,10 @@ void Dualizer_OPT::run(ui32 j) {
 			stack.push(state);
 		} else {
 			do_not_pop = true;
-		}
-		
-		
+		}		
 		up_to_date = true;		
 	}
-	print();
+	
 }
 
 void Dualizer_OPT::init(const binary::Matrix& L, const char* file_name, const char* mode) {	
@@ -540,7 +537,7 @@ void Dualizer_OPT::init(const binary::Matrix& L, const char* file_name, const ch
 		throw std::runtime_error("Dualizer_OPT::init::wrong re-init");
 	}
 	//open file if necessary
-	if (file_name != nullptr) {
+	if ((file_name != nullptr) & (p_file == nullptr)) {
 		p_file = fopen(file_name, mode);
 		if (p_file == nullptr)
 			throw std::runtime_error(string("Dualizer_OPT::init::") + std::strerror(errno));
