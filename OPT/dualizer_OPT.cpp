@@ -25,6 +25,21 @@
 //	r = n - q * 10;
 //}
 
+using namespace std;
+
+void Dualizer_OPT::Covering::reserve(ui32 size, ui32 width) {
+	data_.reserve(size);
+	text_.reserve(size * 4);
+	frequency_ = (ui32*) My_Memory::MM_malloc(width*UI32_SIZE);
+	My_Memory::MM_memset(frequency_, 0, width*UI32_SIZE);
+}
+
+Dualizer_OPT::Covering::~Covering() {
+	if (frequency_ != nullptr) {
+		My_Memory::MM_free(frequency_);
+	}
+}
+
 void Dualizer_OPT::Covering::append(ui32 q) {
 	assert(q <= 99999);
 
@@ -49,7 +64,50 @@ void Dualizer_OPT::Covering::append(ui32 q) {
 	text_.push(' ');
 }
 
-using namespace std;
+void Dualizer_OPT::Covering::remove_last() {
+	assert(data_.size() > 0);
+	data_.pop();
+	do {
+		text_.pop();
+	} while (text_.size() > 0 && text_.top() != ' ');
+}
+
+ui32& Dualizer_OPT::Covering::top() { 
+	return data_.top(); 
+}
+
+void Dualizer_OPT::Covering::print(FILE* p_file) {
+	if (p_file == nullptr) {
+		++frequency_[data_[0]];
+	} else {
+		assert(text_.size() > 0);
+		text_.top() = '\n';
+		//text_.push('\0');
+		//fputs(text_.get_data(), p_file);
+		fwrite(text_.get_data(), 1, text_.size(), p_file);
+		//text_.pop();
+		text_.top() = ' ';
+	}
+}
+
+ui32 Dualizer_OPT::Covering::operator[] (ui32 ind) const throw() { 
+	return data_[ind]; 
+}
+
+ui32 Dualizer_OPT::Covering::size() const throw() { 
+	return data_.size(); 
+}
+
+void Dualizer_OPT::Covering::print_freq(ui32 width) {
+	for (ui32 i = 0; i < width; ++i) {
+		printf("%d ", frequency_[i]);
+	}
+	printf("\n");
+}
+
+ui32* Dualizer_OPT::Covering::get_freq() {
+	return frequency_;
+}
 
 class Stack {
 public:
