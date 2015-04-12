@@ -29,6 +29,7 @@ void main(int argc, char** argv) {
 	try {	
 		//clock_t begin = clock();
 		L.read(argv[1]);
+		L.delete_le_rows();
 		solver.init(L, argv[2]);
 		solver.run();
 		//clock_t end = clock();

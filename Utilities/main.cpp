@@ -26,7 +26,8 @@ void main(int argc, char** argv) {
 		d = atof(argv[4]);
 		seed = atoi(argv[5]);
 		L.random(m, n, d, seed);
-		L.print(argv[1]);
+		L.print(argv[1], "bm");
+		L.print(argv[1], "hg");
 	} catch (runtime_error& rte) {
 		std::cout << rte.what();
 	} catch (...) {

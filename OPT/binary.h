@@ -18,10 +18,8 @@ namespace binary {
 	void reset(ui32* p, ui32 bit);
 	void reset_le(ui32* p, ui32 bit);
 
-	
 
-
-	void submatrix(ui32* dst, const ui32* src, const ui32* rows, ui32 m, ui32 n);
+	void submatrix(ui32* dst, ui32* src, const ui32* rows, ui32 m, ui32 n);
 	void transpose(ui32* dst, const ui32* src, ui32 m, ui32 n);
 
 	//matrix elements are stored by rows
@@ -56,10 +54,12 @@ namespace binary {
 		//io functions
 		void read(FILE* pFile);
 		void read(const char* file_name);
-		void print(FILE* pFile) const;
-		void print0x(FILE* pFile) const;
-		void print(const char* file_name, const char* mode = "w") const;
-
+		void print_bm(FILE* pFile) const;
+		void print_0x(FILE* pFile) const;
+		void print_hg(FILE* pFile) const;
+		void print(const char* file_name, const char* mode = "bm") const;
+		//special functions
+		Matrix& delete_le_rows();
 	protected:
 		void reserve(ui32 m, ui32 n);
 	protected:

@@ -509,20 +509,21 @@ void Dualizer_OPT::init(const binary::Matrix& L, const char* file_name, const ch
 		n_* size32_m()  + //matrix_t_
 		size32_n()      ; //cov
 	pool_ = SC_32(My_Memory::MM_malloc(pool_size * UI32_SIZE));
-	//prepare data for delete_le_rows
-	dst = pool_ + m_ * size32_n();
-	My_Memory::MM_memset(dst, ~0, (size32_n() + size32_m()) * UI32_SIZE);
-	cols = dst; dst += size32_n();
-	rows = dst; dst += size32_m();	
-	matrix_ = const_cast<ui32*>(L.row(0));//data is not changed
+	////prepare data for delete_le_rows
+	//dst = pool_ + m_ * size32_n();
+	//My_Memory::MM_memset(dst, ~0, (size32_n() + size32_m()) * UI32_SIZE);
+	//cols = dst; dst += size32_n();
+	//rows = dst; dst += size32_m();	
+	//matrix_ = const_cast<ui32*>(L.row(0));//data is not changed
 	//delete_le_rows
-	delete_le_rows();		
+	//delete_le_rows();		
 	//prepare data for run()
 	dst = pool_; //-V519
 	//matrix_
-	binary::submatrix(dst, L.row(0), rows, m_, n_);
-	m_ = binary::popcount(rows, m_);
-	matrix_ = dst; dst += m_ * size32_n(); 	
+	//binary::submatrix(dst, L.row(0), rows, m_, n_);
+	My_Memory::MM_memcpy(dst, L.row(0), m() * size32_n() * UI32_SIZE);
+	//m_ = binary::popcount(rows, m_);
+	matrix_ = dst; dst += m() * size32_n(); 	
 	//cols and rows
 	My_Memory::MM_memset(dst, ~0, (size32_n() + size32_m()) * UI32_SIZE);
 	cols = dst; dst += size32_n();
@@ -535,7 +536,7 @@ void Dualizer_OPT::init(const binary::Matrix& L, const char* file_name, const ch
 	binary::transpose(dst, matrix_, m_, n_);
 	matrix_t_ = dst; dst += n_* size32_m();	
 	//cov
-	My_Memory::MM_memset(dst, 0, size32_n()*UI32_SIZE);//cov
+	My_Memory::MM_memset(dst, 0, size32_n()*UI32_SIZE);
 	cov = dst; dst += size32_n();	
 }
 

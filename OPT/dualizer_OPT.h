@@ -83,7 +83,7 @@ public:
 	void clear() throw();
 	void run();
 	void print() {
-		printf("Irreducible coverings: %d\n", n_coverings);
+		printf("%d\n", n_coverings);
 		if (p_file == nullptr)
 			covering.print_freq(n());
 	}

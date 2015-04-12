@@ -120,7 +120,7 @@ void binary::transpose(ui32* dst, const ui32* src, ui32 m, ui32 n) {
 	}
 }
 
-void binary::submatrix(ui32* dst, const ui32* src, const ui32* rows, ui32 m, ui32 n) {
+void binary::submatrix(ui32* dst, ui32* src, const ui32* rows, ui32 m, ui32 n) {
 	//ui32 m_new = popcount(rows, m);
 	//ui32* res = static_cast<ui32*>(My_Memory::MM_malloc(m_new * size(n) * UI32_SIZE));
 	
@@ -292,7 +292,7 @@ void binary::Matrix::read(const char* file_name) {
 //	}
 //}
 
-void binary::Matrix::print(FILE* p_file) const {
+void binary::Matrix::print_bm(FILE* p_file) const {
 	for (ui32 i = 0; i < m_; ++i) {
 		for (ui32 j = 0; j < n_; ++j) {
 			fputc((at(i, j) != 0) + '0', p_file);
@@ -304,7 +304,7 @@ void binary::Matrix::print(FILE* p_file) const {
 		throw std::runtime_error(string("binary::Matrix::print::") + std::strerror(errno));
 }
 
-void binary::Matrix::print0x(FILE* p_file) const {
+void binary::Matrix::print_0x(FILE* p_file) const {
 	for (ui32 i = 0; i < m_; ++i) {
 		for (ui32 ind = 0; ind < size(n_); ++ind) {
 			fprintf(p_file, "%08x ", data_[i*row_size() + ind]);
@@ -315,16 +315,87 @@ void binary::Matrix::print0x(FILE* p_file) const {
 		throw std::runtime_error(string("binary::Matrix::print::") + std::strerror(errno));
 }
 
-void binary::Matrix::print(const char* file_name, const char* mode) const {
-	FILE* p_file = fopen(file_name, mode);
-	if (p_file == nullptr) {
+void binary::Matrix::print_hg(FILE* p_file) const {
+	for (ui32 i = 0; i < m_; ++i) {
+		ui32 j = 0;
+		ui32 const* row_i = row(i);
+		j = binary::find_next(row_i, n_, 0);
+		while (j < n_) {
+			fprintf(p_file, "%d ", j + 1);
+			j = binary::find_next(row_i, n_, j + 1);
+		}
+		fputc('\n', p_file);
+	}
+	if (ferror(p_file))
 		throw std::runtime_error(string("binary::Matrix::print::") + std::strerror(errno));
+}
+
+void binary::Matrix::print(const char* file_name, const char* mode) const {
+	std::string file_out = file_name;
+	file_out += ".";
+	file_out += std::string(mode);
+	FILE* p_file = fopen(file_out.c_str(), "w");
+	if (p_file == nullptr) {
+		throw std::runtime_error(std::string("binary::Matrix::print::") + std::strerror(errno));
 	}
 	try {
-		print(p_file);
+		if (strcmp(mode, "bm") == 0) {
+			print_bm(p_file);
+		} else if (strcmp(mode, "hg") == 0) {
+			print_hg(p_file);
+		} else if (strcmp(mode, "0x") == 0) {
+			print_0x(p_file);
+		} else {
+			throw std::runtime_error("binary::Matrix::print::invalid mode");
+		}
 	} catch (...) {
 		fclose(p_file);
 		throw;
 	}
 	fclose(p_file);
+}
+
+/**********************************************************
+special functions
+**********************************************************/
+
+binary::Matrix& binary::Matrix::delete_le_rows() throw() {
+	ui32 size32_n_ = binary::size(n_);
+	ui32* rows = SC_32(My_Memory::MM_malloc(size32_n_ * UI32_SIZE));
+	My_Memory::MM_memset(rows, ~0, size32_n_ * UI32_SIZE);
+	ui32 i1 = binary::find_next(rows, m_, 0);
+	ui32 i2 = 0;
+
+	while (i1 < m_) {
+		ui32 const* row1 = row(i1);
+		i2 = binary::find_next(rows, m_, i1 + 1);
+		while (i2 < m_) {
+
+			ui32 const* row2 = row(i2);
+			ui32 buf1 = 0;
+			ui32 buf2 = 0;
+			ui32 ind = 0;
+			do {
+				buf1 |= row1[ind] & ~row2[ind];
+				buf2 |= ~row1[ind] & row2[ind];
+				++ind;
+			} while (ind < size32_n_);
+
+			if (buf1 == 0) {
+				binary::reset(rows, i2);
+			} else if (buf2 == 0) {
+				binary::reset(rows, i1);
+				break;
+			}
+
+			i2 = binary::find_next(rows, m_, i2 + 1);
+		}
+		i1 = binary::find_next(rows, m_, i1 + 1);
+	}
+
+	binary::submatrix(data_, data_, rows, m_, n_);
+	m_ = binary::popcount(rows, m_);
+	My_Memory::MM_free(rows);
+
+	return *this;
 }
