@@ -49,6 +49,7 @@ public:
 
 	//preprocesses matrix, allocates memory, set matrix_, matrix_t_, m_, n_, etc
 	void init(const binary::Matrix& L, const char* file_name = nullptr, const char* mode = "wb");
+	void reinit();
 	void clear() throw();
 	void run(ui32 j = ui32(~0));
 	void print() {
@@ -111,5 +112,5 @@ private:
 	ui32 n_;
 	ui32 n_coverings;
 	FILE* p_file;
-	char* file_buffer_;
+	//char* file_buffer_;
 };

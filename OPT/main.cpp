@@ -27,16 +27,11 @@ void main(int argc, char** argv) {
 	binary::Matrix L;
 	Dualizer_OPT solver;
 	try {	
-		//clock_t begin = clock();
 		L.read(argv[1]);
 		L.delete_le_rows();
 		solver.init(L, argv[2]);
 		solver.run();
 		solver.print();
-		//clock_t end = clock();
-		//double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-		//cout << "Elapsed time: " << elapsed_secs << endl;
-
 	} catch (runtime_error& rte) {
 		cout << rte.what() << " sec" << endl;
 	} catch (...) {

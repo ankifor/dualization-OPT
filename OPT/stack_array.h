@@ -40,6 +40,10 @@ public:
 		}
 	}
 
+	void resize_to_capacity() {
+		size_ = capacity_;
+	}
+
 	ui32 size() const throw() { return size_; }
 
 	void push_empty() {
@@ -86,6 +90,10 @@ public:
 	}
 	
 	const TX* get_data() const throw() {
+		return data_;
+	}
+
+	TX* get_data() throw() {
 		return data_;
 	}
 	

@@ -464,6 +464,10 @@ void Dualizer_OPT::run(ui32 j) {
 	//they are stored in variable pool for efficiency
 	ui32* const state = cols;//cols, rows, support_rows, p_j	
 	//stack stores the whole tree node
+	if (j != ui32(~0)) {
+		binary::reset_le(cols, j);
+		binary::set(cols, j);
+	}
 	stack.push(state);
 	//helps to avoid double copying while descent pushing
 	char up_to_date = true;
@@ -473,7 +477,9 @@ void Dualizer_OPT::run(ui32 j) {
 		if (!up_to_date)
 			stack.copy_top(state);		
 		if ((stack.size() == 1) & (j != ui32(~0))) {
+			
 			*p_j = (binary::at(cols, j) ? j : n());
+			//if (*p_j < n()) printf("%d ", *p_j);
 		} else {
 			*p_j = binary::find_next(cols, n(), 0);
 		}
@@ -542,20 +548,23 @@ void Dualizer_OPT::init(const binary::Matrix& L, const char* file_name, const ch
 		if (p_file == nullptr)
 			throw std::runtime_error(string("Dualizer_OPT::init::") + std::strerror(errno));
 	}
-	//prepare pool_: a place to store all data
-	if (pool_ == nullptr) {
-		m_ = L.height();
-		n_ = L.width();
-		ui32 pool_size =
-			m_ * size32_n() + //matrix_
-			size32_n() + //cols
-			size32_m() + //rows				
-			size32_m() + //support_rows
-			1 + //p_j
-			n_* size32_m() + //matrix_t_
-			size32_n(); //cov
-		pool_ = SC_32(My_Memory::MM_malloc(pool_size * UI32_SIZE));
+	if (pool_ != nullptr) {
+		reinit();
+		return;
 	}
+	n_coverings = 0;
+	//prepare pool_: a place to store all data
+	m_ = L.height();
+	n_ = L.width();
+	ui32 pool_size =
+		m_ * size32_n() + //matrix_
+		size32_n() + //cols
+		size32_m() + //rows				
+		size32_m() + //support_rows
+		1 + //p_j
+		n_* size32_m() + //matrix_t_
+		size32_n(); //cov
+	pool_ = SC_32(My_Memory::MM_malloc(pool_size * UI32_SIZE));
 	//matrix_
 	ui32* dst = pool_; //-V519
 	My_Memory::MM_memcpy(dst, L.row(0), m() * size32_n() * UI32_SIZE);
@@ -580,13 +589,19 @@ void Dualizer_OPT::init(const binary::Matrix& L, const char* file_name, const ch
 	covering.reserve(20, n());
 }
 
+void Dualizer_OPT::reinit() {
+	My_Memory::MM_memset(cols, ~0, (size32_n() + size32_m()) * UI32_SIZE);
+	My_Memory::MM_memset(support_rows, 0, (size32_m() + 1) * UI32_SIZE);
+	My_Memory::MM_memset(cov, 0, size32_n()*UI32_SIZE);
+}
+
 void Dualizer_OPT::clear() {
 	if (p_file != nullptr)
 		fclose(p_file);
 	if (pool_ != nullptr)
 		My_Memory::MM_free(pool_);
-	if (file_buffer_ != nullptr)
-		My_Memory::MM_free(file_buffer_);
+//	if (file_buffer_ != nullptr)
+//		My_Memory::MM_free(file_buffer_);
 	covering.~Covering();
 	My_Memory::MM_memset(this, 0, sizeof(Dualizer_OPT));
 }
