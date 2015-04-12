@@ -42,7 +42,7 @@ namespace binary {
 		//void swap(Matrix& src) throw();
 		//void transpose(const Matrix& src);
 		//void submatrix(const ui32* rows);
-		void random(ui32 m, ui32 n, float d, unsigned seed);//generate random matrix with P(a[i,j]=1)=d
+		void random(ui32 m, ui32 n, float d);//generate random matrix with P(a[i,j]=1)=d
 
 		//constructors
 		Matrix(ui32 m = 0, ui32 n = 0) : data_(nullptr), n_(0), m_(0) { reserve(m, n); }
@@ -60,6 +60,7 @@ namespace binary {
 		void print(const char* file_name, const char* mode = "bm") const;
 		//special functions
 		Matrix& delete_le_rows();
+		Matrix& random_stripe(const Matrix& src, ui32 height);
 	protected:
 		void reserve(ui32 m, ui32 n);
 	protected:

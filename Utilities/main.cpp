@@ -8,9 +8,11 @@ using namespace std;
 void main(int argc, char** argv) {
 
 	binary::Matrix L;
+	binary::Matrix L1;
 	ui32 m = 0;
 	ui32 n = 0;
 	float d = 0.0;
+	ui32 u = 0;
 	unsigned seed = 0;
 	try {
 		std::string help = 
@@ -18,16 +20,24 @@ void main(int argc, char** argv) {
 			"argv[2] is m\n"
 			"argv[3] is n\n"
 			"argv[4] is d\n"
-			"argv[5] is seed\n";
+			"argv[5] is seed\n"
+			;
 		if (argc < 6)
 			throw std::runtime_error(string("not enough arguments:\n") + help);
 		m = atoi(argv[2]);
 		n = atoi(argv[3]);
 		d = atof(argv[4]);
 		seed = atoi(argv[5]);
-		L.random(m, n, d, seed);
+		srand(seed);
+		L.random(m, n, d);
 		L.print(argv[1], "bm");
 		L.print(argv[1], "hg");
+		L.print_bm(stdout);
+		fputc('\n', stdout);
+		u = atoi(argv[6]);
+		L1.random_stripe(L, u);
+		L1.print_bm(stdout);
+
 	} catch (runtime_error& rte) {
 		std::cout << rte.what();
 	} catch (...) {

@@ -2,9 +2,9 @@
 
 #include <cstdio>//for fgetc, EOF, fopen, fclose, fputc
 #include <stdexcept>//for runtime_error
-//#include <time.h>//for time()
-//#include <cstdlib>//for rand
-//#include <algorithm>//for std::swap
+#include <cstdlib>//for rand
+#include <algorithm>//for random_shuffle
+#include <vector>//for vector
 
 #include "binary.h"
 #include "my_memory.h"
@@ -172,11 +172,11 @@ void binary::Matrix::reserve(ui32 m, ui32 n) {
 	n_ = n;
 }
 
-void binary::Matrix::random(ui32 m, ui32 n, float d, unsigned seed) {
+void binary::Matrix::random(ui32 m, ui32 n, float d) {
 	reserve(m,n);
 	My_Memory::MM_memset(data_, 0, m*row_size()*UI32_SIZE);
 	ui32 threshold = ui32(RAND_MAX * d);
-	srand(seed);	
+	//srand(seed);	
 	for (ui32 i = 0; i < m_; ++i) {
 		for (ui32 j = 0; j < n_; ++j) {
 			if (static_cast<ui32>(rand()) < threshold)
@@ -396,6 +396,26 @@ binary::Matrix& binary::Matrix::delete_le_rows() throw() {
 	binary::submatrix(data_, data_, rows, m_, n_);
 	m_ = binary::popcount(rows, m_);
 	My_Memory::MM_free(rows);
+
+	return *this;
+}
+
+binary::Matrix& binary::Matrix::random_stripe(const binary::Matrix& src, ui32 height) {
+	ui32 m = src.m_;
+	assert(height <= m);
+
+	std::vector<ui32> selection;
+	selection.resize(m);
+	for (ui32 i = 0; i < m; ++i) {
+		selection[i] = i;
+	}
+	std::random_shuffle(selection.begin(), selection.end());
+	selection.resize(height);
+
+	reserve(height, src.n_);
+	for (ui32 i = 0; i < height; ++i) {
+		My_Memory::MM_memcpy(row(i), src.row(selection[i]), size(n_) * UI32_SIZE);
+	}
 
 	return *this;
 }
