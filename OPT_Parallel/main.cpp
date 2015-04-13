@@ -142,6 +142,9 @@ static void read_matrix(binary::Matrix& L, const char* filename, ui32 rank) {
 
 static void beta_scheme(Stack_Array<double>& task_size, ui32 n, double a, double b, ui32 rank) {
 	//performed by rank==0
+	if (a < 0.01 || b < 1.01) {
+		throw std::runtime_error("beta_scheme::invalid parameters");
+	}
 	task_size.reserve(n);
 	task_size.resize_to_capacity();
 	double tmp = exp(-lgamma(n) + lgamma(a) + lgamma(n - 1 + b));
@@ -196,7 +199,13 @@ static void distribute_tasks(Stack_Array<ui32>& task_performer,
 	MPI_Bcast(task_performer.get_data(), task_performer.size(), MPI_INT32_T, 0, MPI_COMM_WORLD);
 }
 
-
+ui32 reduce_solver(Dualizer_OPT& solver, ui32 rank) {
+	ui32 sum = 0;
+	ui32 n_cov = solver.get_num();
+	printf("before reduce: %d %d\n", rank, n_cov);
+	MPI_Reduce(&n_cov, &sum, 1, MPI_INT32_T, MPI_SUM, 0, MPI_COMM_WORLD);	
+	return sum;
+}
 
 
 int main(int argc, char** argv) {	
@@ -246,12 +255,7 @@ int main(int argc, char** argv) {
 			}
 		}
 		//reduce
-		ui32 sum = 0;
-		{
-			ui32 n_cov = solver.get_num();		
-			printf("before reduce: %d %d\n", rank, n_cov);
-			MPI_Reduce(&n_cov, &sum, 1, MPI_INT32_T, MPI_SUM, 0, MPI_COMM_WORLD);
-		}
+		ui32 sum = reduce_solver(solver, rank);
 		//time		
 		if (rank == 0) {
 			wtime = MPI_Wtime() - wtime;
