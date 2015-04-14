@@ -1,5 +1,6 @@
 #include <mpi.h>
 #include <iostream>
+#include <string>
 
 #include "dualizer_OPT_Parallel.h"
 
@@ -121,6 +122,11 @@
 //	return logGamma;
 //}
 
+const std::string help = "argv[1] - matrix file\n"
+"argv[2] - out file (NUL means no output)\n"
+"argv[3] - estimating method (beta or stripe)\n"
+"argv[>3] - estimating method parameters (beta: a, b; stipe: u, times)\n";
+
 
 int main(int argc, char** argv) {
 	// Initialize the MPI environment
@@ -128,19 +134,29 @@ int main(int argc, char** argv) {
 
 	Dualizer_OPT_Parallel solver;
 	try {		
-		if (argc < 5) {
+		if (argc < 6) {
 			throw std::runtime_error("main::invalid input");
 		}
 		solver.read_matrix(argv[1]);
-		//solver.beta_scheme(argv[3], argv[4]);
-		solver.stripe_scheme(argv[3], argv[4]);
+		if (strcmp(argv[3], "stripe") == 0) {
+			solver.stripe_scheme(argv[4], argv[5]);
+		} else if (strcmp(argv[3], "beta") == 0) {
+			solver.beta_scheme(argv[4], argv[5]);
+		} else {
+			throw std::runtime_error("main::invalid method");
+		}
 		solver.distribute_tasks();
 		solver.set_file_out(argv[2]);
 		solver.run();
 		solver.reduce();
 		solver.print();
 	} catch (std::runtime_error& rte) {
-		std::cout << rte.what() << " sec" << std::endl;
+		ui32 rank = 0;
+		MPI_Comm_rank(MPI_COMM_WORLD, (int*) &rank);
+		if (rank == 0) {
+			std::cout << rte.what() << std::endl << help;
+			std::cout.flush();
+		}
 		MPI_Abort(MPI_COMM_WORLD, -1);
 	} catch (...) {
 		std::cout << "Unknown error" << std::endl;
