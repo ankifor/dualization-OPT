@@ -248,17 +248,17 @@ void Dualizer_OPT::process_unity_cols() throw() {
 	//}
 }
 
-void Dualizer_OPT::process_unity_cols1() throw() {
-	ui32 j = binary::find_next(cols, n(), 0);
-	while (j < n()) {
-		covering.append(j);
-		covering.print(p_file);
-		++n_coverings;
-		covering.remove_last();
-		binary::reset(cols, j);
-		j = binary::find_next(cols, n(), j+1);
-	}
-}
+//void Dualizer_OPT::process_unity_cols1() throw() {
+//	ui32 j = binary::find_next(cols, n(), 0);
+//	while (j < n()) {
+//		covering.append(j);
+//		covering.print(p_file);
+//		++n_coverings;
+//		covering.remove_last();
+//		binary::reset(cols, j);
+//		j = binary::find_next(cols, n(), j+1);
+//	}
+//}
 
 void Dualizer_OPT::process_unity_cols2() throw() {
 	ui32* buf = static_cast<ui32*>(alloca(size32_n() * UI32_SIZE));
