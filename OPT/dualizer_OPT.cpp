@@ -1,6 +1,6 @@
 #include <assert.h>//for assert
 #include <string> //for string(), +
-#include <intrin.h>
+#include <cerrno>
 
 #include "dualizer_OPT.h"
 #include "my_memory.h"
@@ -659,7 +659,7 @@ void Dualizer_OPT::reinit() {
 	My_Memory::MM_memset(cov, 0, size32_n()*UI32_SIZE);
 }
 
-void Dualizer_OPT::clear() {
+void Dualizer_OPT::clear() throw() {
 	if (p_file != nullptr)
 		fclose(p_file);
 	if (pool_ != nullptr)

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include "my_int.h"
 #include "my_memory.h"
 

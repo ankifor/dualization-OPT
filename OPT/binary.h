@@ -62,7 +62,7 @@ namespace binary {
 		void print_hg(FILE* pFile) const;
 		void print(const char* file_name, const char* mode = "bm") const;
 		//special functions
-		Matrix& delete_le_rows();
+		Matrix& delete_le_rows() throw();
 		Matrix& random_stripe(const Matrix& src, ui32 height);
 	protected:
 		ui32* data_;

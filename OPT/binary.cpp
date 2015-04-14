@@ -1,13 +1,25 @@
-#include <intrin.h>//for _bittest, _bittestandset, _bittestandreset, , __popcnt
+
+#if defined(_MSC_VER)
+#include <intrin.h>//for __popcnt64, _tzcnt_u64
+#define popcnt64 __popcnt64
+#define tzcnt64 _tzcnt_u64
+#elif defined(__IBMC__) || defined(__IBMCPP__)
+#include <builtins.h>
+#define popcnt64 __popcnt8
+#define tzcnt64 __cnttz8
+#endif
 
 #include <cstdio>//for fgetc, EOF, fopen, fclose, fputc
 #include <stdexcept>//for runtime_error
 #include <cstdlib>//for rand
 #include <algorithm>//for random_shuffle
 #include <vector>//for vector
+#include <cerrno>
 
 #include "binary.h"
 #include "my_memory.h"
+
+
 
 using namespace std;
 
@@ -18,9 +30,9 @@ ui32 binary::popcount(const ui32* p0, ui32 bitsize) {
 		const ui64* p = reinterpret_cast<const ui64*>(p0);
 
 		for (ui32 ind = 0; ind < sz - 1; ++ind) {
-			sum += (ui32) __popcnt64(p[ind]);
+			sum += (ui32) popcnt64(p[ind]);
 		}
-		sum += (ui32) __popcnt64(p[sz - 1] & mask64(bitsize));
+		sum += (ui32) popcnt64(p[sz - 1] & mask64(bitsize));
 
 		return sum;
 }
@@ -37,31 +49,31 @@ ui32 binary::find_next(const ui32* p, ui32 bitsize, ui32 bit) {
 				buf = RE_C64(p)[ind];
 			} while ((ind < size64(bitsize)) & (buf == 0));
 		}	
-		offset = (ui32) _tzcnt_u64(buf);
+		offset = (ui32) tzcnt64(buf);
     return (ind << UI64_LOG2BIT) + offset;
 
 }
 
-ui32 binary::find_prev(const ui32* p, ui32 bitsize, ui32 bit) {
-	assert(bitsize > 0);
-	assert(bit <= bitsize);
-	if (bit == bitsize)
-		return bitsize;
-
-	ui32 ind = bit >> UI64_LOG2BIT;
-	ui32 offset = bit & UI64_MASK;
-
-	ui64 buf = (RE_C64(p)[ind] << offset) >> offset;
-	while ((ind != 0) & (buf == 0)) {
-		--ind;
-		buf = RE_C64(p)[ind];
-	}
-	if (_BitScanReverse64((unsigned long*) &offset, (unsigned long long) buf)) {
-		return (ind << UI64_LOG2BIT) + offset;
-	} else {
-		return bitsize;
-	}
-}
+//ui32 binary::find_prev(const ui32* p, ui32 bitsize, ui32 bit) {
+//	assert(bitsize > 0);
+//	assert(bit <= bitsize);
+//	if (bit == bitsize)
+//		return bitsize;
+//
+//	ui32 ind = bit >> UI64_LOG2BIT;
+//	ui32 offset = bit & UI64_MASK;
+//
+//	ui64 buf = (RE_C64(p)[ind] << offset) >> offset;
+//	while ((ind != 0) & (buf == 0)) {
+//		--ind;
+//		buf = RE_C64(p)[ind];
+//	}
+//	if (_BitScanReverse64((unsigned long*) &offset, (unsigned long long) buf)) {
+//		return (ind << UI64_LOG2BIT) + offset;
+//	} else {
+//		return bitsize;
+//	}
+//}
 
 //ui32 binary::find_first(const ui32* p, ui32& ind, ui32 max_ind) {
 //	while (ind < max_ind && p[ind] == 0)
@@ -109,17 +121,23 @@ bool binary::all(const ui32* p, ui32 bitsize) {
 
 void binary::set(ui32* p, ui32 bit) {
 	ui32 ind = (bit >> UI32_LOG2BIT);
-	_bittestandset(reinterpret_cast<long*>(p + ind), bit & UI32_MASK);
+	bit &= UI32_MASK;
+	p[ind] |= ui32(1) << bit;
+	//_bittestandset(reinterpret_cast<long*>(p + ind), bit & UI32_MASK);
 }
 
 void binary::reset(ui32* p, ui32 bit) {
 	ui32 ind = (bit >> UI32_LOG2BIT);
-	_bittestandreset(reinterpret_cast<long*>(p + ind), bit & UI32_MASK);
+	bit &= UI32_MASK;
+	p[ind] &= ~(ui32(1) << bit);
+	//_bittestandreset(reinterpret_cast<long*>(p + ind), bit & UI32_MASK);
 }
 
 char binary::at(const ui32* p, ui32 bit) {
 	ui32 ind = bit >> UI32_LOG2BIT;
-	return _bittest(reinterpret_cast<const long*>(p + ind), bit & UI32_MASK);
+	bit &= UI32_MASK;
+	return (p[ind] >> bit) & ui32(1);
+	//return _bittest(reinterpret_cast<const long*>(p + ind), bit & UI32_MASK);
 }
 
 void binary::reset_le(ui32* p, ui32 bit) {
@@ -214,7 +232,7 @@ static void read_get_width_and_check(FILE* p_file, ui32& m, ui32& n) {
 	char ch = 0;
 	char state = 0;
 	ui32 n0 = 0;
-	fpos_t pos = 0;
+	fpos_t pos;
 	if (fgetpos(p_file, &pos) != 0)
 		throw std::runtime_error(string("read_get_width::") + std::strerror(errno));
 
