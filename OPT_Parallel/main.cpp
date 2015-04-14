@@ -2,9 +2,8 @@
 #include <cstdio>
 #include <iostream>
 #include <cmath>
-#include <string>
 
-#include "dualizer_OPT.h"
+#include "dualizer_OPT_Parallel.h"
 #include "stack_array.h"
 
 //static double LogGamma(double x);
@@ -125,142 +124,175 @@
 //	return logGamma;
 //}
 
-static void read_matrix(binary::Matrix& L, const char* filename, ui32 rank) {
-	ui32 sz[2];
-	if (rank == 0) {
-		L.read(filename);
-		L.delete_le_rows();
-		sz[0] = L.height();
-		sz[1] = L.width();
-	}
-	MPI_Bcast(sz, 2, MPI_INT32_T, 0, MPI_COMM_WORLD);
-	if (rank != 0) {
-		L.reserve(sz[0], sz[1]);
-	}
-	MPI_Bcast(L.row(0), L.size32(), MPI_INT32_T, 0, MPI_COMM_WORLD);
-}
+//static void read_matrix(binary::Matrix& L, const char* filename, ui32 rank) {
+//	ui32 sz[2];
+//	if (rank == 0) {
+//		L.read(filename);
+//		L.delete_le_rows();
+//		sz[0] = L.height();
+//		sz[1] = L.width();
+//	}
+//	MPI_Bcast(sz, 2, MPI_INT32_T, 0, MPI_COMM_WORLD);
+//	if (rank != 0) {
+//		L.reserve(sz[0], sz[1]);
+//	}
+//	MPI_Bcast(L.row(0), L.size32(), MPI_INT32_T, 0, MPI_COMM_WORLD);
+//}
+//
+//static void beta_scheme(Stack_Array<double>& task_size, ui32 n, double a, double b, ui32 rank) {
+//	//performed by rank==0
+//	if (a < 0.01 || b < 1.01) {
+//		throw std::runtime_error("beta_scheme::invalid parameters");
+//	}
+//	task_size.reserve(n);
+//	task_size.resize_to_capacity();
+//	double tmp = exp(-lgamma(n) + lgamma(a) + lgamma(n - 1 + b));
+//	task_size[0] = tmp;
+//	for (ui32 j = 1; j < n; ++j) {
+//		tmp *= double(n - j - 1) / double(j + 1) * (double(j) + a) / (double(n - j - 2) + b);
+//		task_size[j] = tmp;
+//	}
+//}
+//
+//static void distribute_tasks(Stack_Array<ui32>& task_performer, 
+//	const Stack_Array<double>& task_size, ui32 n, ui32 rank, ui32 world_size) 
+//{
+//	task_performer.reserve(n);
+//	task_performer.resize_to_capacity();
+//	if (rank == 0) {
+//		Stack_Array<double> expected_load;
+//		expected_load.reserve(world_size);
+//		expected_load.resize_to_capacity();
+//		My_Memory::MM_memset(expected_load.get_data(), 0, world_size * sizeof(double));
+//		for (ui32 j = 0; j < n; ++j) {
+//			ui32 k_min = 0;
+//			double val_min = 1e100;
+//			for (ui32 k = 0; k < world_size; ++k) {
+//				double val = expected_load[k];
+//				if (val < val_min) {
+//					val_min = val;
+//					k_min = k;
+//				}
+//			}
+//			task_performer[j] = k_min;
+//			expected_load[k_min] += task_size[j];
+//		}
+//
+//		//ui32 performer = 0;
+//		//for (ui32 j = 0; j < n; ++j) {
+//		//	task_performer[j] = performer;
+//		//	performer = (performer >= world_size - 1 ? 0 : performer + 1);
+//		//}
+//		
+//		//for (ui32 j = 0; j < n; ++j) {
+//		//	printf("%d ", task_performer[j]);
+//		//}
+//		//printf("\n");
+//		//
+//		//for (ui32 k = 0; k < world_size; ++k) {
+//		//	printf("%f ", expected_load[k]);
+//		//}
+//		//printf("\n");
+//		//fflush(stdout);
+//	}
+//	MPI_Bcast(task_performer.get_data(), task_performer.size(), MPI_INT32_T, 0, MPI_COMM_WORLD);
+//}
+//
+//ui32 reduce_solver(Dualizer_OPT& solver, ui32 rank) {
+//	ui32 sum = 0;
+//	ui32 n_cov = solver.get_num();
+//	printf("before reduce: %d %d\n", rank, n_cov);
+//	MPI_Reduce(&n_cov, &sum, 1, MPI_INT32_T, MPI_SUM, 0, MPI_COMM_WORLD);	
+//	return sum;
+//}
 
-static void beta_scheme(Stack_Array<double>& task_size, ui32 n, double a, double b, ui32 rank) {
-	//performed by rank==0
-	if (a < 0.01 || b < 1.01) {
-		throw std::runtime_error("beta_scheme::invalid parameters");
-	}
-	task_size.reserve(n);
-	task_size.resize_to_capacity();
-	double tmp = exp(-lgamma(n) + lgamma(a) + lgamma(n - 1 + b));
-	task_size[0] = tmp;
-	for (ui32 j = 1; j < n; ++j) {
-		tmp *= double(n - j - 1) / double(j + 1) * (double(j) + a) / (double(n - j - 2) + b);
-		task_size[j] = tmp;
-	}
-}
+//int main(int argc, char** argv) {	
+//	// Initialize the MPI environment
+//	MPI_Init(&argc, &argv);	
+//
+//	Stack_Array<ui32> task_performer;
+//	Stack_Array<double> task_size;
+//	int world_size = 0;
+//	int rank = 0;
+//
+//
+//	
+//	binary::Matrix L;
+//	
+//	try {
+//		double wtime = 0.0;
+//		if (rank == 0) {
+//			wtime = MPI_Wtime();
+//		}
+//		read_matrix(L, argv[1], rank);
+//
+//		MPI_Barrier(MPI_COMM_WORLD);
+//		//calculate tasks
+//		double a = atof(argv[3]);
+//		double b = atof(argv[4]);
+//		if (rank == 0) {			
+//			beta_scheme(task_size, L.width(), a, b, rank);
+//		}
+//		//distribute tasks
+//		MPI_Barrier(MPI_COMM_WORLD);
+//		distribute_tasks(task_performer, task_size, L.width(), rank, world_size);
+//		MPI_Barrier(MPI_COMM_WORLD);
+//		//prepare file_out
+//		char* file_out = nullptr;
+//		if (argv[2] != nullptr && strcmp(argv[2], "NUL") != 0) {
+//			file_out = static_cast<char*>(alloca(128));
+//			sprintf(file_out, "%s%d", argv[2], rank);
+//		}
+//		//run dualizer
+//		Dualizer_OPT solver;
+//		for (ui32 j = 0; j < L.width(); ++j) {
+//			if (task_performer[j] == rank) {
+//				solver.init(L, file_out);
+//				solver.run(j);
+//			}
+//		}
+//		//reduce
+//		ui32 sum = reduce_solver(solver, rank);
+//		//time		
+//		if (rank == 0) {
+//			wtime = MPI_Wtime() - wtime;
+//			printf("%d, %f sec\n", sum, wtime);
+//		}
+//	} catch (std::runtime_error& rte) {
+//		std::cout << rte.what() << " sec" << std::endl;
+//		MPI_Abort(MPI_COMM_WORLD, -1);
+//	} catch (...) {
+//		std::cout << "Unknown error" << std::endl;
+//		MPI_Abort(MPI_COMM_WORLD, -1);
+//	}
+//	// Finalize the MPI environment.
+//	MPI_Finalize();
+//}
 
-static void distribute_tasks(Stack_Array<ui32>& task_performer, 
-	const Stack_Array<double>& task_size, ui32 n, ui32 rank, ui32 world_size) 
-{
-	task_performer.reserve(n);
-	task_performer.resize_to_capacity();
-	if (rank == 0) {
-		Stack_Array<double> expected_load;
-		expected_load.reserve(world_size);
-		expected_load.resize_to_capacity();
-		My_Memory::MM_memset(expected_load.get_data(), 0, world_size * sizeof(double));
-		for (ui32 j = 0; j < n; ++j) {
-			ui32 k_min = 0;
-			double val_min = 1e100;
-			for (ui32 k = 0; k < world_size; ++k) {
-				double val = expected_load[k];
-				if (val < val_min) {
-					val_min = val;
-					k_min = k;
-				}
-			}
-			task_performer[j] = k_min;
-			expected_load[k_min] += task_size[j];
-		}
-
-		//ui32 performer = 0;
-		//for (ui32 j = 0; j < n; ++j) {
-		//	task_performer[j] = performer;
-		//	performer = (performer >= world_size - 1 ? 0 : performer + 1);
-		//}
-		
-		//for (ui32 j = 0; j < n; ++j) {
-		//	printf("%d ", task_performer[j]);
-		//}
-		//printf("\n");
-		//
-		//for (ui32 k = 0; k < world_size; ++k) {
-		//	printf("%f ", expected_load[k]);
-		//}
-		//printf("\n");
-		//fflush(stdout);
-	}
-	MPI_Bcast(task_performer.get_data(), task_performer.size(), MPI_INT32_T, 0, MPI_COMM_WORLD);
-}
-
-ui32 reduce_solver(Dualizer_OPT& solver, ui32 rank) {
-	ui32 sum = 0;
-	ui32 n_cov = solver.get_num();
-	printf("before reduce: %d %d\n", rank, n_cov);
-	MPI_Reduce(&n_cov, &sum, 1, MPI_INT32_T, MPI_SUM, 0, MPI_COMM_WORLD);	
-	return sum;
-}
-
-
-int main(int argc, char** argv) {	
+int main(int argc, char** argv) {
 	// Initialize the MPI environment
-	MPI_Init(&argc, &argv);	
+	MPI_Init(&argc, &argv);
 
-	Stack_Array<ui32> task_performer;
-	Stack_Array<double> task_size;
-	int world_size = 0;
-	int rank = 0;
+	Dualizer_OPT_Parallel solver;
+	try {		
+		solver.read_matrix(argv[1]);
 
-	MPI_Comm_size(MPI_COMM_WORLD, &world_size);
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	
-	binary::Matrix L;
-	
-	try {
-		double wtime = 0.0;
+		int rank = 0;
+		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+		double a = 0.0;
+		double b = 0.0;
+
 		if (rank == 0) {
-			wtime = MPI_Wtime();
+			a = atof(argv[3]);
+			b = atof(argv[4]);
 		}
-		read_matrix(L, argv[1], rank);
-
-		MPI_Barrier(MPI_COMM_WORLD);
-		//calculate tasks
-		double a = atof(argv[3]);
-		double b = atof(argv[4]);
-		if (rank == 0) {			
-			beta_scheme(task_size, L.width(), a, b, rank);
-		}
-		//distribute tasks
-		MPI_Barrier(MPI_COMM_WORLD);
-		distribute_tasks(task_performer, task_size, L.width(), rank, world_size);
-		MPI_Barrier(MPI_COMM_WORLD);
-		//prepare file_out
-		char* file_out = nullptr;
-		if (argv[2] != nullptr && strcmp(argv[2], "NUL") != 0) {
-			file_out = static_cast<char*>(alloca(128));
-			sprintf(file_out, "%s%d", argv[2], rank);
-		}
-		//run dualizer
-		Dualizer_OPT solver;
-		for (ui32 j = 0; j < L.width(); ++j) {
-			if (task_performer[j] == rank) {
-				solver.init(L, file_out);
-				solver.run(j);
-			}
-		}
-		//reduce
-		ui32 sum = reduce_solver(solver, rank);
-		//time		
-		if (rank == 0) {
-			wtime = MPI_Wtime() - wtime;
-			printf("%d, %f sec\n", sum, wtime);
-		}
+		solver.beta_scheme(a, b);
+		solver.distribute_tasks();
+		solver.set_file_out(argv[2]);
+		solver.run();
+		solver.reduce();
+		solver.print();
 	} catch (std::runtime_error& rte) {
 		std::cout << rte.what() << " sec" << std::endl;
 		MPI_Abort(MPI_COMM_WORLD, -1);
