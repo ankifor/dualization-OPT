@@ -239,6 +239,58 @@ void Dualizer_OPT::delete_le_rows() throw() {
 
 }
 
+void Dualizer_OPT::process_unity_cols() throw() {
+	//ui32 rows_count = binary::popcount(rows, m());
+	//if (rows_count == 1) {
+	//	process_unity_cols1();
+	//} else if (rows_count > 1) {
+		process_unity_cols2();
+	//}
+}
+
+void Dualizer_OPT::process_unity_cols1() throw() {
+	ui32 j = binary::find_next(cols, n(), 0);
+	while (j < n()) {
+		covering.append(j);
+		covering.print(p_file);
+		++n_coverings;
+		covering.remove_last();
+		binary::reset(cols, j);
+		j = binary::find_next(cols, n(), j+1);
+	}
+}
+
+void Dualizer_OPT::process_unity_cols2() throw() {
+	ui32* buf = static_cast<ui32*>(alloca(size32_n() * UI32_SIZE));
+	My_Memory::MM_memcpy(buf, cols, size32_n() * UI32_SIZE);
+
+	ui32 i = binary::find_next(rows, m(), 0);
+	if (i == m()) {
+		return;
+	}
+	
+	do {
+		ui32 ind = 0;
+		ui32 const* row_i = matrix_ + i * size32_n();
+		do {
+			buf[ind] &= row_i[ind];
+			++ind;
+		} while (ind < size32_n());
+		i = binary::find_next(rows, m(), i+1);
+	} while (i < m());
+
+	ui32 j = binary::find_next(buf, n(), 0);
+	while (j < n()) {
+		covering.append(j);
+		covering.print(p_file);
+		++n_coverings;
+		covering.remove_last();
+		binary::reset(cols, j);
+		j = binary::find_next(buf, n(), j + 1);
+	}
+
+}
+
 void Dualizer_OPT::delete_fobidden_cols() throw() {
 	ui32 cols_count = binary::popcount(cols, n());
 	//if (cols_count < cov_count) {
@@ -472,19 +524,20 @@ void Dualizer_OPT::run(ui32 j) {
 	//helps to avoid double copying while descent pushing
 	char up_to_date = true;
 	bool do_not_pop = false;
+	bool go_up = false;
 	//in-depth tree search
 	while (!stack.empty()) {		
 		if (!up_to_date)
 			stack.copy_top(state);		
 		if ((stack.size() == 1) & (j != ui32(~0))) {
-			
-			*p_j = (binary::at(cols, j) ? j : n());
-			//if (*p_j < n()) printf("%d ", *p_j);
+			*p_j = j;
+			go_up = !binary::at(cols, j);
 		} else {
-			*p_j = binary::find_next(cols, n(), 0);
+			*p_j = binary::find_next(cols, n(), *p_j);
+			go_up = (*p_j >= n());
 		}
 		//any children left?
-		if (*p_j >= n()) {
+		if (go_up) {
 			//all children are finished, go up
 			if (!do_not_pop) {
 				stack.pop();
@@ -505,30 +558,32 @@ void Dualizer_OPT::run(ui32 j) {
 		binary::set(cov, *p_j);
 		//update state
 		update_covered_and_support_rows(*p_j);
-		//modify last processed child number
-		++*p_j;		
-		stack.update_j_next(*p_j, ui32(p_j - state));
-		//leaf?
-		if (!binary::any(rows, m())) {
-			covering.print(p_file);
-			++n_coverings;
-			//go up in the tree
-			binary::reset(cov, covering.top());
-			covering.remove_last();			
-			up_to_date = false;
-			continue;
-		}
+		//modify last processed child number	
+		stack.update_j_next(*p_j + 1, ui32(p_j - state));
+		////leaf?
+		//if (!binary::any(rows, m())) {
+		//	covering.print(p_file);
+		//	++n_coverings;
+		//	//go up in the tree
+		//	binary::reset(cov, covering.top());
+		//	covering.remove_last();			
+		//	up_to_date = false;
+		//	continue;
+		//}
 		//prepare child
 		delete_fobidden_cols();
 		if (binary::any(cols, n())) {
 			delete_le_rows();
 			delete_zero_cols();
+			//process unit columns
+		  process_unity_cols();
 			//save current state
 			stack.push(state);
 		} else {
 			do_not_pop = true;
 		}		
-		up_to_date = true;		
+		up_to_date = true;	
+		++*p_j;
 	}
 	
 }

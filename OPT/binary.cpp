@@ -42,6 +42,27 @@ ui32 binary::find_next(const ui32* p, ui32 bitsize, ui32 bit) {
 
 }
 
+ui32 binary::find_prev(const ui32* p, ui32 bitsize, ui32 bit) {
+	assert(bitsize > 0);
+	assert(bit <= bitsize);
+	if (bit == bitsize)
+		return bitsize;
+
+	ui32 ind = bit >> UI64_LOG2BIT;
+	ui32 offset = bit & UI64_MASK;
+
+	ui64 buf = (RE_C64(p)[ind] << offset) >> offset;
+	while ((ind != 0) & (buf == 0)) {
+		--ind;
+		buf = RE_C64(p)[ind];
+	}
+	if (_BitScanReverse64((unsigned long*) &offset, (unsigned long long) buf)) {
+		return (ind << UI64_LOG2BIT) + offset;
+	} else {
+		return bitsize;
+	}
+}
+
 //ui32 binary::find_first(const ui32* p, ui32& ind, ui32 max_ind) {
 //	while (ind < max_ind && p[ind] == 0)
 //

@@ -10,6 +10,7 @@ namespace binary {
 	inline ui64 mask64(ui32 bitsize) { return UI64_ALL >> (UI64_BITS - bitsize & UI64_MASK); }
 	ui32 popcount(const ui32* p, ui32 bitsize);
 	ui32 find_next(const ui32* p, ui32 bitsize, ui32 bit);
+	ui32 find_prev(const ui32* p, ui32 bitsize, ui32 bit);
 	//ui32 find_first(const ui32* p, ui32& ind);
 	bool any(const ui32* p, ui32 bitsize);
 	bool all(const ui32* p, ui32 bitsize);
