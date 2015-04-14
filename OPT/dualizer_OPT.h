@@ -10,7 +10,7 @@ protected:
 
 	class Covering {
 	public:
-		void reserve(ui32 size, ui32 width);
+		void reserve(ui32 size, ui32 width, bool reset_frequency = true);
 		~Covering();
 		void append(ui32 num);
 		void remove_last();
@@ -19,11 +19,11 @@ protected:
 		ui32 operator[] (ui32 ind) const throw();		
 		ui32 size() const throw();
 		void print_freq(ui32 width);
-		ui32* get_freq();
+		Stack_Array<ui32>& get_freq();
 	private:
 		Stack_Array<ui32> data_;
 		Stack_Array<char> text_;
-		ui32* frequency_ = nullptr;
+		Stack_Array<ui32> frequency_;
 	};
 
 	class Stack {
@@ -48,7 +48,7 @@ public:
 	~Dualizer_OPT() { clear(); }
 
 	//preprocesses matrix, allocates memory, set matrix_, matrix_t_, m_, n_, etc
-	void init(const binary::Matrix& L, const char* file_name = nullptr, const char* mode = "wb");
+	void init(const binary::Matrix& L, const char* file_name = nullptr, const char* mode = "wb", bool reset_frequency = true);
 	void reinit();
 	void clear() throw();
 	void run(ui32 j = ui32(~0));
@@ -57,7 +57,7 @@ public:
 		if (p_file == nullptr)
 			covering.print_freq(n());
 	}
-	ui32* get_freq() { return covering.get_freq(); }
+	Stack_Array<ui32>& get_freq() { return covering.get_freq(); }
 	ui32 get_num() { return n_coverings;  }
 
 protected:
@@ -111,6 +111,7 @@ private:
 	ui32 m_;
 	ui32 n_;
 	ui32 n_coverings;
+	ui32 pool_size_;
 	FILE* p_file;
 	//char* file_buffer_;
 };

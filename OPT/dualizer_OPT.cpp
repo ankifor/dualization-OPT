@@ -12,18 +12,18 @@ using namespace std;
 
 //Dualizer_OPT::Covering
 
-void Dualizer_OPT::Covering::reserve(ui32 size, ui32 width) {
+void Dualizer_OPT::Covering::reserve(ui32 size, ui32 width, bool reset_frequency) {
 	data_.reserve(size);
 	text_.reserve(size * 4);
-	frequency_ = (ui32*) My_Memory::MM_malloc(width*UI32_SIZE);
-	My_Memory::MM_memset(frequency_, 0, width*UI32_SIZE);
+	if (frequency_.size() != width) {
+		frequency_.resize(width);
+		reset_frequency = true;
+	}
+	if (reset_frequency)
+		My_Memory::MM_memset(frequency_.get_data(), 0, width*UI32_SIZE);
 }
 
-Dualizer_OPT::Covering::~Covering() {
-	if (frequency_ != nullptr) {
-		My_Memory::MM_free(frequency_);
-	}
-}
+Dualizer_OPT::Covering::~Covering() {}
 
 void Dualizer_OPT::Covering::append(ui32 q) {
 	assert(q <= 99999);
@@ -90,7 +90,7 @@ void Dualizer_OPT::Covering::print_freq(ui32 width) {
 	printf("\n");
 }
 
-ui32* Dualizer_OPT::Covering::get_freq() {
+Stack_Array<ui32>& Dualizer_OPT::Covering::get_freq() {
 	return frequency_;
 }
 
@@ -533,38 +533,47 @@ void Dualizer_OPT::run(ui32 j) {
 	
 }
 
-void Dualizer_OPT::init(const binary::Matrix& L, const char* file_name, const char* mode) {	
+void Dualizer_OPT::init(const binary::Matrix& L, const char* file_name, const char* mode, bool reset_frequency) {
 	//do not process empty matrices
 	if (L.width() == 0 || L.height() == 0) {
 		throw std::runtime_error("Dualizer_OPT::init::empty matrix");
 	}
-	//checks for re-init
-	if ( ((m_ != 0) & (L.height() != m_)) | ((n_ != 0) & (L.width() != n_)) )	{
-		throw std::runtime_error("Dualizer_OPT::init::wrong re-init");
-	}
 	//open file if necessary
-	if ((file_name != nullptr) & (p_file == nullptr)) {
+	if (file_name != nullptr) {
+		if (p_file != nullptr) {
+			fclose(p_file);
+			p_file = nullptr;
+		}
 		p_file = fopen(file_name, mode);
-		if (p_file == nullptr)
+		if (p_file == nullptr) {
 			throw std::runtime_error(string("Dualizer_OPT::init::") + std::strerror(errno));
+		}
 	}
-	if (pool_ != nullptr) {
-		reinit();
-		return;
+	ui32 m_new = L.height();
+	ui32 n_new = L.width();
+	ui32 pool_size =
+		m_new * binary::size(n_new) + //matrix_
+		binary::size(n_new) + //cols
+		binary::size(m_new) + //rows				
+		binary::size(m_new) + //support_rows
+		1 + //p_j
+		n_new* binary::size(m_new) + //matrix_t_
+		binary::size(n_new); //cov
+
+
+	if (pool_size > pool_size_) {
+		pool_size_ = pool_size;
+		if (pool_ != nullptr) {
+			My_Memory::MM_free(pool_);
+			pool_ = nullptr;
+		}
+		pool_ = SC_32(My_Memory::MM_malloc(pool_size_ * UI32_SIZE));
 	}
 	n_coverings = 0;
 	//prepare pool_: a place to store all data
-	m_ = L.height();
-	n_ = L.width();
-	ui32 pool_size =
-		m_ * size32_n() + //matrix_
-		size32_n() + //cols
-		size32_m() + //rows				
-		size32_m() + //support_rows
-		1 + //p_j
-		n_* size32_m() + //matrix_t_
-		size32_n(); //cov
-	pool_ = SC_32(My_Memory::MM_malloc(pool_size * UI32_SIZE));
+	m_ = m_new;
+	n_ = n_new;
+	
 	//matrix_
 	ui32* dst = pool_; //-V519
 	My_Memory::MM_memcpy(dst, L.row(0), m() * size32_n() * UI32_SIZE);
@@ -583,7 +592,7 @@ void Dualizer_OPT::init(const binary::Matrix& L, const char* file_name, const ch
 	//stack
 	stack.reserve(2 * size32_m() + size32_n() + 1, 16);
 	//covering
-	covering.reserve(20, n());
+	covering.reserve(20, n(), reset_frequency);
 	reinit();
 }
 
@@ -606,4 +615,5 @@ void Dualizer_OPT::clear() {
 	stack.~Stack();
 	My_Memory::MM_memset(this, 0, sizeof(Dualizer_OPT));
 }
+
 

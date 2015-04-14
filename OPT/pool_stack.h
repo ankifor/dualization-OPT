@@ -13,6 +13,14 @@ public:
 	}
 
 	void set_element_size(ui32 element_size) {
+		//recalculate capacity
+		if (element_size_ != 0 && element_size != element_size_) {
+			double capacity1 = capacity_;
+			double sz1 = element_size_;
+			double sz2 = element_size;
+			capacity1 = capacity1 * sz1 * double(UI32_SIZE) / (sz2 * double(UI32_SIZE));
+			capacity_ = ui32(floor(capacity1));
+		}
 		element_size_ = element_size;
 	}
 

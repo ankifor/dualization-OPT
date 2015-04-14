@@ -132,7 +132,8 @@ int main(int argc, char** argv) {
 			throw std::runtime_error("main::invalid input");
 		}
 		solver.read_matrix(argv[1]);
-		solver.beta_scheme(argv[3], argv[4]);
+		//solver.beta_scheme(argv[3], argv[4]);
+		solver.stripe_scheme(argv[3], argv[4]);
 		solver.distribute_tasks();
 		solver.set_file_out(argv[2]);
 		solver.run();

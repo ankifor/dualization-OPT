@@ -34,9 +34,11 @@ private:
 	binary::Matrix L;
 	Stack_Array<double> task_size;
 	Stack_Array<ui32> task_performer;
+	Stack_Array<ui32> frequency;
 	char* file_out;
 	ui32 rank;
 	ui32 world_size;
 	ui32 n_coverings;
-	double wtime;
+	double wtime_begin;
+	double wtime_scheme;
 };

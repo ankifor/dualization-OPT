@@ -40,7 +40,8 @@ public:
 		}
 	}
 
-	void resize_to_capacity() {
+	void resize(ui32 size) {
+		reserve(size);
 		size_ = capacity_;
 	}
 
