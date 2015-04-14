@@ -570,28 +570,28 @@ void Dualizer_OPT::init(const binary::Matrix& L, const char* file_name, const ch
 	My_Memory::MM_memcpy(dst, L.row(0), m() * size32_n() * UI32_SIZE);
 	matrix_ = dst; dst += m() * size32_n(); 	
 	//cols, rows
-	My_Memory::MM_memset(dst, ~0, (size32_n() + size32_m()) * UI32_SIZE);
 	cols = dst; dst += size32_n();
 	rows = dst; dst += size32_m();	
 	//support_rows and p_j
-	My_Memory::MM_memset(dst, 0, (size32_m() + 1) * UI32_SIZE);
 	support_rows = dst; dst += size32_m();
 	p_j          = dst; dst += 1;	
 	//matrix_t_
 	binary::transpose(dst, matrix_, m_, n_);
 	matrix_t_ = dst; dst += n_* size32_m();	
 	//cov
-	My_Memory::MM_memset(dst, 0, size32_n()*UI32_SIZE);
 	cov = dst; dst += size32_n();	
 	//stack
 	stack.reserve(2 * size32_m() + size32_n() + 1, 16);
 	//covering
 	covering.reserve(20, n());
+	reinit();
 }
 
 void Dualizer_OPT::reinit() {
-	My_Memory::MM_memset(cols, ~0, (size32_n() + size32_m()) * UI32_SIZE);
-	My_Memory::MM_memset(support_rows, 0, (size32_m() + 1) * UI32_SIZE);
+	My_Memory::MM_memset(cols, ~0, size32_n() * UI32_SIZE);
+	My_Memory::MM_memset(rows, ~0, size32_m() * UI32_SIZE);
+	My_Memory::MM_memset(support_rows, 0, size32_m() * UI32_SIZE);
+	*p_j = 0;
 	My_Memory::MM_memset(cov, 0, size32_n()*UI32_SIZE);
 }
 
@@ -603,6 +603,7 @@ void Dualizer_OPT::clear() {
 //	if (file_buffer_ != nullptr)
 //		My_Memory::MM_free(file_buffer_);
 	covering.~Covering();
+	stack.~Stack();
 	My_Memory::MM_memset(this, 0, sizeof(Dualizer_OPT));
 }
 

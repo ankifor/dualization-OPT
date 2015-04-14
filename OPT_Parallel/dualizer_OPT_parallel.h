@@ -11,11 +11,18 @@ public:
 	~Dualizer_OPT_Parallel();
 	
 	void read_matrix(const char* filename);
-	void beta_scheme(double a, double b);
+
+	void beta_scheme(const char* text_a, const char* text_b);
+	void stripe_scheme(const char* text_u, const char* text_times);
+
 	void distribute_tasks();
-	void reduce();
+	
 	void set_file_out(char* src);
+
 	void run();
+
+	void reduce();
+
 	void print();
 
 private:

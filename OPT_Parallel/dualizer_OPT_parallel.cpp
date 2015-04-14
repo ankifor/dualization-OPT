@@ -34,8 +34,10 @@ void Dualizer_OPT_Parallel::read_matrix(const char* filename) {
 	MPI_Bcast(L.row(0), L.size32(), MPI_INT32_T, 0, MPI_COMM_WORLD);
 }
 
-void Dualizer_OPT_Parallel::beta_scheme(double a, double b) {
+void Dualizer_OPT_Parallel::beta_scheme(const char* text_a, const char* text_b) {
 	if (rank == 0) {
+		double a = atof(text_a);
+		double b = atof(text_b);
 		if (a < 0.01 || b < 1.01) {
 			throw std::runtime_error("beta_scheme::invalid parameters");
 		}
@@ -48,6 +50,17 @@ void Dualizer_OPT_Parallel::beta_scheme(double a, double b) {
 			task_size[j] = tmp;
 		}
 	}
+}
+
+void Dualizer_OPT_Parallel::stripe_scheme(const char* text_u, const char* text_times) {
+	ui32 u = atoi(text_u);
+	ui32 times = atoi(text_times);
+	binary::Matrix L_u;//stripe-submatrix
+	//L_u.random_stripe(L, u);
+	//solver.init(L_u);
+
+
+	solver.clear();
 }
 
 void Dualizer_OPT_Parallel::distribute_tasks() {
