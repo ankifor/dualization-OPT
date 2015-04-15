@@ -237,7 +237,7 @@ static void read_get_width_and_check(FILE* p_file, ui32& m, ui32& n) {
 		ch = static_cast<char>(fgetc(p_file));
 		if (ferror(p_file))
 			throw std::runtime_error(string("read_get_width::") + std::strerror(errno));
-
+		//printf("ch = %d, state = %d, EOF = %d, m = %d, n = %d, n0 = %d, \\n = %d, \\r = %d\n", ch, state, char(EOF), m, n, n0, '\n', '\r');
 		switch (state) {
 		case 0:
 			if (ch == '0' || ch == '1') {
@@ -247,6 +247,8 @@ static void read_get_width_and_check(FILE* p_file, ui32& m, ui32& n) {
 				state = 0;//skip
 			} else if (ch == char(EOF) || ch == '\n') {
 				state = 11;
+			} else if (ch == '\r') {
+				;
 			} else {
 				state = 10;//error
 			}
@@ -265,6 +267,8 @@ static void read_get_width_and_check(FILE* p_file, ui32& m, ui32& n) {
 				} else {
 					state = 10;
 				}
+			} else if (ch == '\r') {
+				;
 			} else {
 				state = 10;
 			}

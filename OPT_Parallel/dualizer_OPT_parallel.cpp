@@ -28,11 +28,11 @@ void Dualizer_OPT_Parallel::read_matrix(const char* filename) {
 		sz[0] = L.height();
 		sz[1] = L.width();
 	}
-	MPI_Bcast(sz, 2, MPI_INT32_T, 0, MPI_COMM_WORLD);
+	MPI_Bcast(sz, 2, MPI_INT, 0, MPI_COMM_WORLD);
 	if (rank != 0) {
 		L.reserve(sz[0], sz[1]);
 	}
-	MPI_Bcast(L.row(0), L.size32(), MPI_INT32_T, 0, MPI_COMM_WORLD);
+	MPI_Bcast(L.row(0), L.size32(), MPI_INT, 0, MPI_COMM_WORLD);
 	solver.init(L);//reserve memory
 }
 
@@ -78,7 +78,7 @@ void Dualizer_OPT_Parallel::stripe_scheme(const char* text_u, const char* text_t
 		//	frequency[j] += freq0[j];
 		//}
 	}
-	MPI_Reduce(solver.get_freq().get_data(), task_size.get_data(), n(), MPI_INT32_T, MPI_SUM, 0, MPI_COMM_WORLD);
+	MPI_Reduce(solver.get_freq().get_data(), task_size.get_data(), n(), MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
 	if (rank == 0) {
 		wtime_scheme = MPI_Wtime() - wtime_begin;
 	}
@@ -104,16 +104,16 @@ void Dualizer_OPT_Parallel::distribute_tasks() {
 			expected_load[k_min] += task_size[j];
 		}
 	}
-	MPI_Bcast(task_performer.get_data(), task_performer.size(), MPI_INT32_T, 0, MPI_COMM_WORLD);
+	MPI_Bcast(task_performer.get_data(), task_performer.size(), MPI_INT, 0, MPI_COMM_WORLD);
 }
 
 void Dualizer_OPT_Parallel::reduce() {
 	n_coverings = 0;
 	ui32 n_cov = solver.get_num();
 	printf("before reduce: %d %d\n", rank, n_cov);
-	//MPI_Reduce(&n_cov, &n_coverings, 1, MPI_INT32_T, MPI_SUM, 0, MPI_COMM_WORLD);
+	//MPI_Reduce(&n_cov, &n_coverings, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
 	frequency.resize(n());
-	MPI_Reduce(solver.get_freq().get_data(), frequency.get_data(), n(), MPI_INT32_T, MPI_SUM, 0, MPI_COMM_WORLD);
+	MPI_Reduce(solver.get_freq().get_data(), frequency.get_data(), n(), MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
 	for (ui32 j = 0; j < frequency.size(); ++j) {
 		n_coverings += frequency[j];
 	}

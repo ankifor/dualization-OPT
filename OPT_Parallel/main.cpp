@@ -2,7 +2,7 @@
 #include <iostream>
 #include <string>
 
-#include "dualizer_OPT_Parallel.h"
+#include "dualizer_OPT_parallel.h"
 
 //static double LogGamma(double x);
 //
