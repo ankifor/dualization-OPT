@@ -22,3 +22,7 @@ typedef unsigned long long ui64;
 #define RE_C64(x) reinterpret_cast<const ui64*>(x)
 #define RE_32(x) reinterpret_cast<ui32*>(x)
 #define SC_32(x) static_cast<ui32*>(x)
+
+#if defined(__IBMC__) || defined(__IBMCPP__)
+#define nullptr 0
+#endif

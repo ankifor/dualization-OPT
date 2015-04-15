@@ -1,12 +1,12 @@
 
 #if defined(_MSC_VER)
 #include <intrin.h>//for __popcnt64, _tzcnt_u64
-#define popcnt64 __popcnt64
-#define tzcnt64 _tzcnt_u64
+#define popcnt32 __popcnt
+#define tzcnt32 _tzcnt_u32
 #elif defined(__IBMC__) || defined(__IBMCPP__)
 #include <builtins.h>
-#define popcnt64 __popcnt8
-#define tzcnt64 __cnttz8
+#define popcnt32 __popcnt4
+#define tzcnt32 __cnttz4
 #endif
 
 #include <cstdio>//for fgetc, EOF, fopen, fclose, fputc
@@ -19,38 +19,35 @@
 #include "binary.h"
 #include "my_memory.h"
 
-
-
 using namespace std;
 
-ui32 binary::popcount(const ui32* p0, ui32 bitsize) {
+ui32 binary::popcount(const ui32* p, ui32 bitsize) {
 		assert(bitsize > 0);
 		ui32 sum = 0;
-		ui32 sz = size64(bitsize);
-		const ui64* p = reinterpret_cast<const ui64*>(p0);
+		ui32 sz = size(bitsize);
 
 		for (ui32 ind = 0; ind < sz - 1; ++ind) {
-			sum += (ui32) popcnt64(p[ind]);
+			sum += popcnt32(p[ind]);
 		}
-		sum += (ui32) popcnt64(p[sz - 1] & mask64(bitsize));
+		sum += popcnt32(p[sz - 1] & mask(bitsize));
 
 		return sum;
 }
 
 ui32 binary::find_next(const ui32* p, ui32 bitsize, ui32 bit) {
     assert(bitsize > 0);		
-    ui32 ind = bit >> UI64_LOG2BIT;
-    ui32 offset = bit & UI64_MASK;
+    ui32 ind = bit >> UI32_LOG2BIT;
+    ui32 offset = bit & UI32_MASK;
 
-		ui64 buf = (RE_C64(p)[ind] >> offset) << offset;
+		ui32 buf = (p[ind] >> offset) << offset;
 		if (buf == 0) {
 			do {
 				++ind;
-				buf = RE_C64(p)[ind];
-			} while ((ind < size64(bitsize)) & (buf == 0));
+				buf = p[ind];
+			} while ((ind < size(bitsize)) & (buf == 0));
 		}	
-		offset = (ui32) tzcnt64(buf);
-    return (ind << UI64_LOG2BIT) + offset;
+		offset = (ui32) tzcnt32(buf);
+    return (ind << UI32_LOG2BIT) + offset;
 
 }
 
@@ -236,7 +233,7 @@ static void read_get_width_and_check(FILE* p_file, ui32& m, ui32& n) {
 	if (fgetpos(p_file, &pos) != 0)
 		throw std::runtime_error(string("read_get_width::") + std::strerror(errno));
 
-	while (state<10) {
+	while (state<10 && ch != char(EOF)) {
 		ch = static_cast<char>(fgetc(p_file));
 		if (ferror(p_file))
 			throw std::runtime_error(string("read_get_width::") + std::strerror(errno));
@@ -248,7 +245,7 @@ static void read_get_width_and_check(FILE* p_file, ui32& m, ui32& n) {
 				state = 1;
 			} else if (ch == ' ') {
 				state = 0;//skip
-			} else if (ch == EOF || ch == '\n') {
+			} else if (ch == char(EOF) || ch == '\n') {
 				state = 11;
 			} else {
 				state = 10;//error
@@ -259,7 +256,7 @@ static void read_get_width_and_check(FILE* p_file, ui32& m, ui32& n) {
 				++n;
 			} else if (ch == ' ') {
 				// skip
-			} else if (ch == '\n' || ch == EOF) {
+			} else if (ch == '\n' || ch == char(EOF)) {
 				if (m == 0 || n == n0) {
 					n0 = n;
 					n = 0;
@@ -402,14 +399,16 @@ binary::Matrix& binary::Matrix::delete_le_rows() throw() {
 	ui32 size32_n_ = binary::size(n_);
 	ui32* rows = SC_32(My_Memory::MM_malloc(size32_n_ * UI32_SIZE));
 	My_Memory::MM_memset(rows, ~0, size32_n_ * UI32_SIZE);
+
 	ui32 i1 = binary::find_next(rows, m_, 0);
 	ui32 i2 = 0;
+
 
 	while (i1 < m_) {
 		ui32 const* row1 = row(i1);
 		i2 = binary::find_next(rows, m_, i1 + 1);
+		
 		while (i2 < m_) {
-
 			ui32 const* row2 = row(i2);
 			ui32 buf1 = 0;
 			ui32 buf2 = 0;

@@ -18,7 +18,7 @@ int My_Memory::memset_size = 0;
 
 using namespace std;
 
-void main(int argc, char** argv) {
+int main(int argc, char** argv) {
 
 #ifndef NDEBUG
 	std::atexit(My_Memory::print);
@@ -33,8 +33,11 @@ void main(int argc, char** argv) {
 		solver.run();
 		solver.print();
 	} catch (runtime_error& rte) {
-		cout << rte.what() << " sec" << endl;
+		cout << rte.what() << endl;
+		return 1;
 	} catch (...) {
 		cout << "Unknown error" << endl;
+		return 2;
 	}
+	return 0;
 }
