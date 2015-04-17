@@ -15,7 +15,7 @@ protected:
 		void append(ui32 num);
 		void remove_last();
 		ui32& top();
-		void print(FILE* p_file);
+		void print(FILE* p_file, bool extra = false);
 		ui32 operator[] (ui32 ind) const throw();		
 		ui32 size() const throw();
 		void print_freq(ui32 width);
@@ -63,6 +63,7 @@ public:
 protected:
 
 	void update_covered_and_support_rows(ui32 j) throw();
+	bool process_zero_and_unity_cols() throw();
 
 	void process_unity_cols() throw();
 	void process_unity_cols1() throw();

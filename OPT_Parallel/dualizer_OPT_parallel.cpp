@@ -28,6 +28,7 @@ void Dualizer_OPT_Parallel::read_matrix(const char* filename) {
 		sz[0] = L.height();
 		sz[1] = L.width();
 	}
+//#pragma warning(suppress: 6001)
 	MPI_Bcast(sz, 2, MPI_INT, 0, MPI_COMM_WORLD);
 	if (rank != 0) {
 		L.reserve(sz[0], sz[1]);
