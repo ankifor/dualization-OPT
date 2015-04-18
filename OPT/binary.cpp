@@ -401,8 +401,9 @@ special functions
 
 binary::Matrix& binary::Matrix::delete_le_rows() throw() {
 	ui32 size32_n_ = binary::size(n_);
-	ui32* rows = SC_32(My_Memory::MM_malloc(size32_n_ * UI32_SIZE));
-	My_Memory::MM_memset(rows, ~0, size32_n_ * UI32_SIZE);
+	ui32 size32_m_ = binary::size(m_);
+	ui32* rows = SC_32(My_Memory::MM_malloc(size32_m_ * UI32_SIZE));
+	My_Memory::MM_memset(rows, ui32(~0), size32_m_ * UI32_SIZE);
 
 	ui32 i1 = binary::find_next(rows, m_, 0);
 	ui32 i2 = 0;

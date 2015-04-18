@@ -104,27 +104,27 @@ Stack_Array<ui32>& Dualizer_OPT::Covering::get_freq() {
 
 //Dualizer_OPT::Stack
 
-void Dualizer_OPT::Stack::push(const ui32* pool) {
-	assert(pool != nullptr);
+void Dualizer_OPT::Stack::push() {
+	assert(state_ != nullptr);
 	pool_stack_.push_empty();
-	My_Memory::MM_memcpy(pool_stack_.top(), pool, pool_stack_.element_size() * UI32_SIZE);
+	My_Memory::MM_memcpy(pool_stack_.top(), state_, pool_stack_.element_size() * UI32_SIZE);
 }
 
-void Dualizer_OPT::Stack::update_j_next(ui32 j_next, ui32 offset) {
-	*(pool_stack_.top() + offset) = j_next;
+void Dualizer_OPT::Stack::update_j_next(ui32 j_next, const ui32* offset) {
+	*(pool_stack_.top() + ui32(offset - state_)) = j_next;
 }
 
-void Dualizer_OPT::Stack::reset_cols(ui32 j, ui32 offset) {
-	binary::reset((pool_stack_.top() + offset), j);
+void Dualizer_OPT::Stack::reset_cols(ui32 j, const ui32* offset) {
+	binary::reset((pool_stack_.top() + ui32(offset - state_)), j);
 }
 
 void Dualizer_OPT::Stack::pop() throw() {
 	pool_stack_.pop();
 }
 
-void Dualizer_OPT::Stack::copy_top(ui32* pool) throw() {
-	assert(pool != nullptr);
-	My_Memory::MM_memcpy(pool, pool_stack_.top(), pool_stack_.element_size() * UI32_SIZE);
+void Dualizer_OPT::Stack::copy_top() throw() {
+	assert(state_ != nullptr);
+	My_Memory::MM_memcpy(state_, pool_stack_.top(), pool_stack_.element_size() * UI32_SIZE);
 }
 
 bool Dualizer_OPT::Stack::empty() const throw() { 
@@ -135,11 +135,12 @@ int Dualizer_OPT::Stack::size() const throw() {
 	return pool_stack_.size(); 
 }
 
-Dualizer_OPT::Stack::Stack() {}
+Dualizer_OPT::Stack::Stack(): state_(nullptr) {}
 
-void Dualizer_OPT::Stack::reserve(ui32 pool_size, ui32 size) {
+void Dualizer_OPT::Stack::reserve(ui32 pool_size, ui32 size, ui32* state) {
 	pool_stack_.set_element_size(pool_size);
 	pool_stack_.reserve(size);
+	const_cast<ui32*>(state_) = state;
 }
 
 Dualizer_OPT::Stack::~Stack() {}
@@ -564,13 +565,11 @@ void Dualizer_OPT::run(ui32 j) {
 	//current tree node may be described by 5 variables:
 	//rows, cols, support_rows, covered_rows
 	//they are stored in variable pool for efficiency
-	ui32* const state = cols;//cols, rows, support_rows, p_j	
-	//stack stores the whole tree node
 	if (j != ui32(~0)) {
 		binary::reset_le(cols, j);
 		binary::set(cols, j);
 	}
-	stack.push(state);
+	stack.push();
 	//helps to avoid double copying while descent pushing
 	char up_to_date = true;
 	bool do_not_pop = false;
@@ -579,7 +578,7 @@ void Dualizer_OPT::run(ui32 j) {
 	while (!stack.empty()) {		
 
 		if (!up_to_date)
-			stack.copy_top(state);		
+			stack.copy_top();		
 
 		bool parallel = (stack.size() == 1) & (j != ui32(~0));
 		bool go_up = false;
@@ -610,13 +609,13 @@ void Dualizer_OPT::run(ui32 j) {
 			continue;
 		}
 		//reset j-th column
-		stack.reset_cols(*p_j, ui32(cols - state));
+		stack.reset_cols(*p_j, cols);
 		binary::reset(cols, *p_j);
 		//append j to the covering
 		covering.append(*p_j);
 		//binary::set(cov, *p_j);
 		//modify last processed child number	
-		stack.update_j_next(*p_j + 1, ui32(p_j - state));
+		stack.update_j_next(*p_j + 1, p_j);
 		//prepare child
 		update_covered_and_support_rows(*p_j);
 		delete_fobidden_cols();
@@ -631,7 +630,7 @@ void Dualizer_OPT::run(ui32 j) {
 			do_not_pop = !any;
 			//save current state
 			if (!do_not_pop) {
-				stack.push(state);
+				stack.push();
 			}
 		}
 		up_to_date = true;	
@@ -681,26 +680,33 @@ void Dualizer_OPT::init(const binary::Matrix& L, const char* file_name, const ch
 	m_ = m_new;
 	n_ = n_new;
 	
-	//matrix_
-	ui32* dst = pool_; //-V519
-	My_Memory::MM_memcpy(dst, L.row(0), m() * size32_n() * UI32_SIZE);
-	matrix_ = dst; dst += m() * size32_n(); 	
-	//cols, rows
-	cols = dst; dst += size32_n();
-	rows = dst; dst += size32_m();	
-	//support_rows and p_j
-	support_rows = dst; dst += size32_m();
-	p_j          = dst; dst += 1;	
-	//matrix_t_
-	binary::transpose(dst, matrix_, m_, n_);
-	matrix_t_ = dst; dst += n_* size32_m();	
-	//cov
-	//cov = dst; dst += size32_n();	
-	//stack
-	stack.reserve(2 * size32_m() + size32_n() + 1, 16);
+	ui32* dst = pool_; //-V519	
+	//matrix
+	{
+		matrix_ = dst; dst += m() * size32_n();
+		My_Memory::MM_memcpy(matrix_, L.row(0), m() * size32_n() * UI32_SIZE);
+	}
+	//state variables
+	{
+		cols         = dst; dst += size32_n();
+		rows         = dst; dst += size32_m();
+		support_rows = dst; dst += size32_m();
+		p_j          = dst; dst += 1;
+
+		stack.reserve(2 * size32_m() + size32_n() + 1, 16, cols);
+		reinit();
+	}
+	//transposed matrix
+	{
+		matrix_t_ = dst; dst += n_* size32_m();
+		binary::transpose(matrix_t_, matrix_, m_, n_);
+	}	
 	//covering
-	covering.reserve(20, n(), reset_frequency);
-	reinit();
+	{
+		//cov
+		//cov = dst; dst += size32_n();	
+		covering.reserve(20, n(), reset_frequency);
+	}	
 }
 
 void Dualizer_OPT::reinit() {

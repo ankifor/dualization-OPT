@@ -28,18 +28,19 @@ protected:
 
 	class Stack {
 	public:
-		void push(const ui32* pool);
-		void update_j_next(ui32 j_next, ui32 offset);
-		void reset_cols(ui32 j, ui32 offset);
+		void push();
+		void update_j_next(ui32 j_next, const ui32* offset);
+		void reset_cols(ui32 j, const ui32* offset);
 		void pop() throw();
-		void copy_top(ui32* pool) throw();
+		void copy_top() throw();
 		bool empty() const throw();
 		int size() const throw();
-		void reserve(ui32 pool_size, ui32 size = 16);
+		void reserve(ui32 pool_size, ui32 size, ui32* state);
 		Stack();
 		~Stack();
 	private:
 		Pool_Stack pool_stack_;
+		ui32* const state_;
 	};
 
 public:
@@ -110,7 +111,7 @@ private:
 	ui32* support_rows;
 	ui32* p_j;
 	ui32* matrix_t_;
-	ui32* cov;	
+	//ui32* cov;	
 	Covering covering;
 
 	ui32 m_;
