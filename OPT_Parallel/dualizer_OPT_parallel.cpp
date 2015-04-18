@@ -5,12 +5,12 @@
 
 Dualizer_OPT_Parallel::Dualizer_OPT_Parallel():
 	rank(0), world_size(0), n_coverings(0), file_out(nullptr), 
-	wtime_begin(0.0), wtime_scheme(0.0)
+	wtime_overall(0.0), wtime_scheme(0.0), wtime_dualization(0.0)
 {
 	MPI_Comm_size(MPI_COMM_WORLD, (int*) &world_size);
 	MPI_Comm_rank(MPI_COMM_WORLD, (int*) &rank);
 	if (rank == 0) {
-		wtime_begin = MPI_Wtime();
+		wtime_overall = MPI_Wtime();
 	}
 }
 
@@ -38,6 +38,8 @@ void Dualizer_OPT_Parallel::read_matrix(const char* filename) {
 }
 
 void Dualizer_OPT_Parallel::beta_scheme(const char* text_a, const char* text_b) {
+	wtime_scheme = MPI_Wtime();
+
 	if (rank == 0) {
 		double a = atof(text_a);
 		double b = atof(text_b);
@@ -51,11 +53,13 @@ void Dualizer_OPT_Parallel::beta_scheme(const char* text_a, const char* text_b) 
 			tmp *= double(n() - j - 1) / double(j + 1) * (double(j) + a) / (double(n() - j - 2) + b);
 			task_size[j] = tmp;
 		}
-		wtime_scheme = MPI_Wtime() - wtime_begin;
 	}
+	
 }
 
 void Dualizer_OPT_Parallel::stripe_scheme(const char* text_u, const char* text_times) {
+	wtime_scheme = MPI_Wtime();
+	
 	ui32 u = atoi(text_u);
 	ui32 times = atoi(text_times);
 	if (u >= n() || times == 0) {
@@ -82,9 +86,8 @@ void Dualizer_OPT_Parallel::stripe_scheme(const char* text_u, const char* text_t
 	if (solver.get_freq().get_data() != nullptr || rank == 0) {
 		MPI_Reduce(solver.get_freq().get_data(), task_size.get_data(), n(), MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
 	}
-	if (rank == 0) {
-		wtime_scheme = MPI_Wtime() - wtime_begin;
-	}
+
+	
 }
 
 void Dualizer_OPT_Parallel::distribute_tasks() {
@@ -108,12 +111,13 @@ void Dualizer_OPT_Parallel::distribute_tasks() {
 		}
 	}
 	MPI_Bcast(task_performer.get_data(), task_performer.size(), MPI_INT, 0, MPI_COMM_WORLD);
+	wtime_scheme = MPI_Wtime() - wtime_scheme;
 }
 
 void Dualizer_OPT_Parallel::reduce() {
 	n_coverings = 0;
 	ui32 n_cov = solver.get_num();
-	printf("before reduce: %d %d\n", rank, n_cov);
+	//printf("before reduce: %d %d\n", rank, n_cov);
 	//MPI_Reduce(&n_cov, &n_coverings, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
 	frequency.resize(n());
 	MPI_Reduce(solver.get_freq().get_data(), frequency.get_data(), n(), MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
@@ -123,6 +127,7 @@ void Dualizer_OPT_Parallel::reduce() {
 }
 
 void Dualizer_OPT_Parallel::run() {
+	wtime_dualization = MPI_Wtime();
 	solver.init(L, file_out);
 	for (ui32 j = 0; j < L.width(); ++j) {
 		if (task_performer[j] == rank) {
@@ -130,6 +135,7 @@ void Dualizer_OPT_Parallel::run() {
 			solver.run(j);
 		}
 	}
+	wtime_dualization = MPI_Wtime() - wtime_dualization;
 }
 
 void Dualizer_OPT_Parallel::set_file_out(char* src) {
@@ -139,12 +145,17 @@ void Dualizer_OPT_Parallel::set_file_out(char* src) {
 	}
 }
 
-void Dualizer_OPT_Parallel::print() {
+void Dualizer_OPT_Parallel::print(FILE* p_file, const char* id_text) {
+	ui32 id = atoi(id_text);
+	fprintf(p_file, "%d %d %d %d %f %f\n", id, rank, world_size, solver.get_num(), wtime_scheme, wtime_dualization);
+
 	if (rank == 0) {
-		printf("%d, %f, %f sec\n", n_coverings, wtime_scheme, MPI_Wtime() - wtime_begin);
+		wtime_overall = MPI_Wtime() - wtime_overall;
+		printf("%d %f\n", n_coverings, wtime_overall);
 		for (ui32 j = 0; j < frequency.size(); ++j) {
 			printf("%d ", frequency[j]);
 		}
 		printf("\n");
 	}
+
 }

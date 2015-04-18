@@ -23,7 +23,7 @@ public:
 
 	void reduce();
 
-	void print();
+	void print(FILE* p_file = stdout, const char* id_text = "0");
 
 private:
 	Dualizer_OPT_Parallel(const Dualizer_OPT_Parallel &);
@@ -39,6 +39,7 @@ private:
 	ui32 rank;
 	ui32 world_size;
 	ui32 n_coverings;
-	double wtime_begin;
+	double wtime_overall;
+	double wtime_dualization;
 	double wtime_scheme;
 };
