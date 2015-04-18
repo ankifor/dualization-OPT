@@ -79,7 +79,9 @@ void Dualizer_OPT_Parallel::stripe_scheme(const char* text_u, const char* text_t
 		//	frequency[j] += freq0[j];
 		//}
 	}
-	MPI_Reduce(solver.get_freq().get_data(), task_size.get_data(), n(), MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+	if (solver.get_freq().get_data() != nullptr || rank == 0) {
+		MPI_Reduce(solver.get_freq().get_data(), task_size.get_data(), n(), MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+	}
 	if (rank == 0) {
 		wtime_scheme = MPI_Wtime() - wtime_begin;
 	}
