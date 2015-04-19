@@ -462,3 +462,65 @@ binary::Matrix& binary::Matrix::random_stripe(const binary::Matrix& src, ui32 he
 
 	return *this;
 }
+
+binary::Matrix& binary::Matrix::sort_cols(const binary::Matrix& src) {
+
+	std::vector<ui32> permutation(src.width(), 0);
+	for (ui32 j = 0; j < src.width(); ++j) {
+		permutation[j] = j;
+	}
+
+	{
+		std::vector<ui32> weights(src.width(), 0);
+		for (ui32 i = 0; i < src.height(); ++i) {
+			ui32 const* row_i = src.row(i);
+			ui32 j = find_next(row_i, src.width(), 0);
+			while (j < src.width()) {
+				++weights[j];
+				j = find_next(row_i, src.width(), j + 1);
+			}
+		}
+
+		ui32 n = src.width();
+		ui32 newn = 0;
+		do {
+
+			//for (auto& e = weights.begin(); e < weights.end(); ++e) {
+			//	printf("%d ", *e);
+			//}
+			//printf("\n");
+			//fflush(stdout);
+
+			newn = 0;
+			for (ui32 j = 1; j < n; ++j) {
+				if (weights[j - 1] < weights[j]) {
+					std::swap(weights[j - 1], weights[j]);
+					std::swap(permutation[j - 1], permutation[j]);
+					newn = j;
+				}
+			}
+			n = newn;
+		} while (n > 0);
+
+
+
+		
+	}
+
+
+
+	reserve(src.height(), src.width());
+	for (ui32 i = 0; i < src.height(); ++i) {
+		ui32* row_i = row(i);
+		ui32 const* row_i_src = src.row(i);
+		for (ui32 j = 0; j < src.width(); ++j) {
+			if (binary::at(row_i_src, permutation[j])) {
+				binary::set(row_i, j);
+			} else {
+				binary::reset(row_i, j);
+			}
+		}
+	}
+
+	return *this;
+}

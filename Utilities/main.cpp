@@ -7,31 +7,44 @@ using namespace std;
 
 void main(int argc, char** argv) {
 
-	binary::Matrix L;
-	binary::Matrix L1;
-	ui32 m = 0;
-	ui32 n = 0;
-	float d = 0.0;
-	ui32 u = 0;
-	unsigned seed = 0;
+	
+	
+
 	try {
+		
 		std::string help = 
-			"argv[1] is file_out\n"
-			"argv[2] is m\n"
-			"argv[3] is n\n"
-			"argv[4] is d\n"
-			"argv[5] is seed\n"
+			"-random <file_out> <m> <n> <prob> <seed>\n"
+			"-sort <file_in> <file_out>\n"
 			;
-		if (argc < 6)
+		if (argc < 2)
 			throw std::runtime_error(string("not enough arguments:\n") + help);
-		m = atoi(argv[2]);
-		n = atoi(argv[3]);
-		d = atof(argv[4]);
-		seed = atoi(argv[5]);
-		srand(seed);
-		L.random(m, n, d);
-		L.print(argv[1], "bm");
-		L.print(argv[1], "hg");
+		if (strcmp(argv[1], "-random") == 0) {
+			if (argc < 7)
+				throw std::runtime_error(string("not enough arguments:\n") + help);			
+			ui32 m = atoi(argv[3]);
+			ui32 n = atoi(argv[4]);
+			float d = atof(argv[5]);
+			unsigned seed = atoi(argv[6]);
+			srand(seed);
+			binary::Matrix L;
+			L.random(m, n, d);
+			L.print(argv[2], "bm");
+			L.print(argv[2], "hg");
+		} else if (strcmp(argv[1], "-sort") == 0) {
+			if (argc < 4)
+				throw std::runtime_error(string("not enough arguments:\n") + help);
+			binary::Matrix L;
+			L.read(argv[2]);
+			binary::Matrix L1;
+			L1.sort_cols(L);
+			L1.print(argv[3], "bm");
+			L1.print(argv[3], "hg");
+		} else {
+			throw std::runtime_error(string("invalid input:\n") + help);
+		}
+
+		
+
 		//L.print_bm(stdout);
 		//fputc('\n', stdout);
 		//u = atoi(argv[6]);

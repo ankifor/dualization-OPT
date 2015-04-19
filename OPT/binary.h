@@ -64,6 +64,7 @@ namespace binary {
 		//special functions
 		Matrix& delete_le_rows() throw();
 		Matrix& random_stripe(const Matrix& src, ui32 height);
+		Matrix& sort_cols(const binary::Matrix& src);
 	protected:
 		ui32* data_;
 		ui32 n_;//matrix width
