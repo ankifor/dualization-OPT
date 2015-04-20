@@ -40,7 +40,7 @@ protected:
 		~Stack();
 	private:
 		Pool_Stack pool_stack_;
-		ui32* const state_;
+		ui32* state_;
 	};
 
 public:

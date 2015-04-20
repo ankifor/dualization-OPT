@@ -5,7 +5,7 @@
 
 using namespace std;
 
-void main(int argc, char** argv) {
+int main(int argc, char** argv) {
 
 	
 	
@@ -42,7 +42,6 @@ void main(int argc, char** argv) {
 		} else {
 			throw std::runtime_error(string("invalid input:\n") + help);
 		}
-
 		
 
 		//L.print_bm(stdout);
@@ -53,7 +52,10 @@ void main(int argc, char** argv) {
 
 	} catch (runtime_error& rte) {
 		std::cout << rte.what();
+		return 1;
 	} catch (...) {
 		std::cout << "Unknown error\n";
+		return 2;
 	}
+	return 0;
 }

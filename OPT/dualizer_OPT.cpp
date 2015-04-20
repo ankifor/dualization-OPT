@@ -140,7 +140,7 @@ Dualizer_OPT::Stack::Stack(): state_(nullptr) {}
 void Dualizer_OPT::Stack::reserve(ui32 pool_size, ui32 size, ui32* state) {
 	pool_stack_.set_element_size(pool_size);
 	pool_stack_.reserve(size);
-	const_cast<ui32*>(state_) = state;
+	state_ = state;
 }
 
 Dualizer_OPT::Stack::~Stack() {}
