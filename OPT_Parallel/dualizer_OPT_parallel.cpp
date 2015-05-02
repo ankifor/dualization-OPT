@@ -61,20 +61,20 @@ void Dualizer_OPT_Parallel::beta_scheme(const char* text_a, const char* text_b) 
 void Dualizer_OPT_Parallel::stripe_scheme(const char* text_u, const char* text_times) {
 	wtime_scheme = MPI_Wtime();
 	method_num = 's';
-	ui32 u = atoi(text_u);
+	ui32 r = atoi(text_u);
 	ui32 times = atoi(text_times);
-	if (u >= n() || times == 0) {
+	if (r >= n() || times == 0) {
 		throw std::runtime_error("Dualizer_OPT_Parallel::stripe_scheme::invalid paramtres");
 	}
 	binary::Matrix L_u;//stripe-submatrix
 
 	for (ui32 i = rank; i < times; i += world_size) {
-		L_u.random_stripe(L, u);
+		L_u.random_stripe(L, r);
 		L_u.delete_le_rows();
 		solver.init(L_u, nullptr, nullptr, false);
 		solver.run();
 	}	
-
+	
 	Stack_Array<ui32> buffer;
 	if (rank == 0) {
 		buffer.resize(n());

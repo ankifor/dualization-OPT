@@ -49,7 +49,14 @@ public:
 	~Dualizer_OPT() { clear(); }
 
 	//preprocesses matrix, allocates memory, set matrix_, matrix_t_, m_, n_, etc
-	void init(const binary::Matrix& L, const char* file_name = nullptr, const char* mode = "wb", bool reset_frequency = true);
+	void init(
+		const binary::Matrix& L, 
+		const char* file_name = nullptr, 
+		const char* mode = "wb", 
+		bool reset_frequency = true,
+		const binary::Matrix* L_to_check = nullptr
+		);
+	void check_covering(const binary::Matrix& L_to_check);
 	void reinit();
 	void clear() throw();
 	void run(ui32 j = ui32(~0));
@@ -62,6 +69,8 @@ public:
 	ui32 get_num() { return n_coverings;  }
 
 protected:
+	ui32 get_next_j() throw();
+	ui32 get_next_i() throw();
 
 	void update_covered_and_support_rows(ui32 j) throw();
 	bool process_zero_and_unity_cols() throw();
@@ -101,6 +110,8 @@ private:
 	inline ui32 mask32_n() const throw() { return binary::mask(n_); }
 	inline ui64 mask64_n() const throw() { return binary::mask64(n_); }
 
+	inline ui32 m1() const throw() { return m1_; }
+	inline ui32 size32_m1() const throw() { return binary::size(m1_); }
 private:
 	ui32* pool_;
 	Stack stack;
@@ -110,12 +121,17 @@ private:
 	ui32* rows;
 	ui32* support_rows;
 	ui32* p_j;
+	ui32* p_i;
 	ui32* matrix_t_;
+	ui32* covered_rows_;
+	ui32* matrix_to_cover_t_;
 	//ui32* cov;	
 	Covering covering;
 
+
 	ui32 m_;
 	ui32 n_;
+	ui32 m1_;
 	ui32 n_coverings;
 	ui32 pool_size_;
 	FILE* p_file;
