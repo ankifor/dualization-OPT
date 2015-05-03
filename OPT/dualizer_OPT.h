@@ -54,7 +54,7 @@ public:
 	void clear() throw();
 	void run(ui32 j = ui32(~0));
 	void print() {
-		printf("%d\n", n_coverings);
+		printf("%d %d %d\n", n_coverings, n_steps, n_spare);
 		if (p_file == nullptr)
 			covering.print_freq(n());
 	}
@@ -117,6 +117,8 @@ private:
 	ui32 m_;
 	ui32 n_;
 	ui32 n_coverings;
+	ui32 n_steps;
+	ui32 n_spare;
 	ui32 pool_size_;
 	FILE* p_file;
 	//char* file_buffer_;

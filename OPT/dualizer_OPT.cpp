@@ -608,6 +608,7 @@ void Dualizer_OPT::run(ui32 j) {
 			up_to_date = false;
 			continue;
 		}
+		++n_steps;
 		//reset j-th column
 		stack.reset_cols(*p_j, cols);
 		binary::reset(cols, *p_j);
@@ -633,10 +634,11 @@ void Dualizer_OPT::run(ui32 j) {
 				stack.push();
 			}
 		}
+		n_spare += !any;
 		up_to_date = true;	
 		++*p_j;
 	}
-	
+	n_steps += n_coverings;
 }
 
 void Dualizer_OPT::init(const binary::Matrix& L, const char* file_name, const char* mode, bool reset_frequency) {
