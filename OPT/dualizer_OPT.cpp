@@ -636,12 +636,13 @@ void Dualizer_OPT::run(ui32 j) {
 		if (parallel) {
 			*p_j = j;
 			go_up = !binary::at(cols, j);
-		} else if (!do_not_pop) {// && stack.size() > 1
-			*p_j = get_next_j();
-			//*p_j = binary::find_next(cols, n(), *p_j);
+		} else if (!do_not_pop) {
+			if (stack.size() > 1) {
+				*p_j = get_next_j();
+			} else {
+				*p_j = binary::find_next(cols, n(), *p_j);
+			}
 			go_up = (*p_j >= n());
-		//} else if (!do_not_pop && stack.size() == 1) {
-		//	*p_j = binary::find_next(cols, n(), *p_j);
 		} else {
 			go_up = true;
 		}
