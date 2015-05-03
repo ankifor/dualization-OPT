@@ -662,6 +662,7 @@ void Dualizer_OPT::run(ui32 j) {
 			up_to_date = false;
 			continue;
 		}
+		++n_steps;
 		//reset j-th column
 		stack.reset_cols(*p_j, cols);
 		binary::reset(cols, *p_j);
@@ -676,8 +677,9 @@ void Dualizer_OPT::run(ui32 j) {
 
 		bool any = binary::any(cols, n());
 		do_not_pop = !any;
+		
 		if (any) {
-			delete_le_rows();
+			//delete_le_rows();
 			//delete_zero_cols();
 		  //process_unity_cols();
 			any = process_zero_and_unity_cols();
@@ -688,11 +690,11 @@ void Dualizer_OPT::run(ui32 j) {
 				stack.push();
 			}
 		}
-
+		n_spare += !any;
 		up_to_date = true;	
 		*p_j = 0;
 	}
-	
+	n_steps += n_coverings;
 }
 
 void Dualizer_OPT::init(
