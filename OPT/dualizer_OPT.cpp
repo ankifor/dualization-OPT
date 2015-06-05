@@ -716,7 +716,7 @@ void Dualizer_OPT::run1() {
 				break;
 			stack.copy_top();
 			covering.remove_last(depth - *p_depth + 1);
-			n_spare += !any_compliant | !any_children & (sum == 0);
+			n_spare += !any_compliant | !any_children;
 			go_down_ind = false;
 			continue;
 		}
