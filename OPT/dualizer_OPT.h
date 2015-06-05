@@ -61,7 +61,7 @@ public:
 	void clear() throw();
 	void run(ui32 j = ui32(~0));
 	void print() {
-		printf("%d %d %d\n", n_coverings, n_steps, n_spare);
+		printf("%u %u %u\n", n_coverings, n_steps, n_spare);
 		if (p_file == nullptr)
 			covering.print_freq(n());
 	}
@@ -70,7 +70,7 @@ public:
 
 protected:
 	ui32 get_next_j() throw();
-	ui32 get_next_i() throw();
+	ui32 get_next_i(ui32& sum) throw();
 
 	void update_covered_and_support_rows(ui32 j) throw();
 	bool process_zero_and_unity_cols() throw();

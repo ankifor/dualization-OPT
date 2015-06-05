@@ -293,6 +293,7 @@ void Dualizer_OPT::delete_le_rows() throw() {
 				++ind;
 			} while ( ind < size32_n_ );
 
+
 			if (buf1 == 0) {
 				binary::reset(rows, i2);
 			} else if (buf2 == 0) {
@@ -349,10 +350,15 @@ void Dualizer_OPT::delete_le_rows() throw() {
 
 void Dualizer_OPT::delete_fobidden_cols() throw() {
 	ui32 cols_count = binary::popcount(cols, n());
+	ui32 support_count = binary::popcount(support_rows, m());
+	ui32 cov_count = covering.size();
+	ui32 n1 = cov_count * cols_count * 5 * m();
+	ui32 n2 = cov_count * (2 * m() + 3 * n()) + support_count * 2 * n();
 	//if (cols_count < cov_count) {
-	if (cols_count * m() > 2 * n()) {
+	//if (cols_count * m() > 2 * n()) {
+	if (n2 < n1) {
 		delete_fobidden_cols2(); 		
-	} else if(cols_count > 0) {
+	} else if(n1 > 0) {
 		delete_fobidden_cols1();
 	}
 }
@@ -586,7 +592,7 @@ ui32 Dualizer_OPT::get_next_j() throw() {
 	return (ind << UI32_LOG2BIT) + offset;
 }
 
-ui32 Dualizer_OPT::get_next_i() throw() {
+ui32 Dualizer_OPT::get_next_i(ui32& sum0) throw() {
 	ui32 i_min = 0;
 	ui32 sum_min = n() + 1;
 	cols[size32_n() - 1] &= mask32_n();
@@ -606,6 +612,7 @@ ui32 Dualizer_OPT::get_next_i() throw() {
 		}
 		i = binary::find_next(rows, m(), i + 1);
 	}
+	sum0 = sum_min;
 	return i_min;
 }
 
@@ -617,7 +624,11 @@ void Dualizer_OPT::run(ui32 j) {
 		binary::reset_le(cols, j);
 		binary::set(cols, j);
 	} else {
-		*p_i = get_next_i();
+		ui32 sum = 0;
+		*p_i = get_next_i(sum);
+		if (sum == 0) {
+			return;
+		}
 	}
 	stack.push();
 	//helps to avoid double copying while descent pushing
@@ -686,11 +697,16 @@ void Dualizer_OPT::run(ui32 j) {
 			do_not_pop = !any;
 			//save current state
 			if (!do_not_pop) {
-				*p_i = get_next_i();// binary::find_next(rows, m(), 0);
-				stack.push();
+				ui32 sum = 0;
+				*p_i = get_next_i(sum);// binary::find_next(rows, m(), 0);
+				//if (sum == 0) {
+				//	do_not_pop = true;
+				//} else {
+					stack.push();
+				//}				
 			}
 		}
-		n_spare += !any;
+		n_spare += do_not_pop;
 		up_to_date = true;	
 		*p_j = 0;
 	}
