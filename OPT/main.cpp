@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
 		L.read(argv[1]);
 		L.delete_le_rows();
 		solver.init(L, argv[2]);
-		solver.run();
+		solver.run1();
 		solver.print();
 	} catch (runtime_error& rte) {
 		cout << rte.what() << endl;

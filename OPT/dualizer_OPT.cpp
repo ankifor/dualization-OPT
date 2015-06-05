@@ -57,12 +57,14 @@ void Dualizer_OPT::Covering::append(ui32 q) {
 	text_.push(' ');
 }
 
-void Dualizer_OPT::Covering::remove_last() {
-	assert(data_.size() > 0);
-	data_.pop();
-	do {
-		text_.pop();
-	} while (text_.size() > 0 && text_.top() != ' ');
+void Dualizer_OPT::Covering::remove_last(ui32 num) {
+	assert(data_.size() > 0 && num > 0);
+	for (ui32 i = 0; i < num; ++i) {
+		data_.pop();
+		do {
+			text_.pop();
+		} while (text_.size() > 0 && text_.top() != ' ');
+	}
 }
 
 ui32& Dualizer_OPT::Covering::top() { 
@@ -167,40 +169,7 @@ void Dualizer_OPT::update_covered_and_support_rows(ui32 j) throw() {
 	support_rows[size32_m() - 1] &= mask32_m();
 }
 
-//void Dualizer_OPT::delete_zero_cols() throw() {
-//	ui32 n1 = binary::popcount(cols, n()) * m();
-//	ui32 n2 = binary::popcount(rows, m()) * n();
-//	
-//	if (n1 < n2) {
-//		delete_zero_cols1();
-//	} else {
-//		delete_zero_cols2();
-//	}
-//
-//}
-
-//void Dualizer_OPT::delete_zero_cols1() throw() {
-//	rows[size32_m() - 1] &= mask32_m();
-//	ui32 j = binary::find_next(cols, n(), 0);
-//
-//	while (j < n()) {
-//		ui32 const* col_j = matrix_t_ + j * size32_m();
-//		ui32 buf = 0;
-//		ui32 ind = 0;
-//		do {
-//			buf |= rows[ind] & col_j[ind];
-//			++ind;
-//		} while (ind < size32_m());
-//
-//		if (buf == 0)
-//			binary::reset(cols, j);			
-//
-//		j = binary::find_next(cols, n(), j + 1);
-//	}
-//
-//}
-
-bool Dualizer_OPT::process_zero_and_unity_cols() throw() {
+char Dualizer_OPT::process_zero_and_unity_cols() throw() {
 	ui32* buf_zero = static_cast<ui32*>(alloca(size32_n() * UI32_SIZE));
 	ui32* buf_unit = static_cast<ui32*>(alloca(size32_n()*UI32_SIZE));
 
@@ -211,9 +180,6 @@ bool Dualizer_OPT::process_zero_and_unity_cols() throw() {
 
 	ui32 i = binary::find_next(rows, m(), 0);
 	assert(i < m());
-	//if (i == m()) {
-	//	return false;
-	//}
 
 	do {
 		ui32 ind = 0;
@@ -226,9 +192,10 @@ bool Dualizer_OPT::process_zero_and_unity_cols() throw() {
 		i = binary::find_next(rows, m(), i + 1);
 	} while (i < m());
 	
-
+	bool any_children = false;
 	ui32 j = binary::find_next(buf_unit, n(), 0);
 	while (j < n()) {
+		any_children = true;
 		covering.append(j);
 		covering.print(p_file);
 		++n_coverings;
@@ -237,16 +204,16 @@ bool Dualizer_OPT::process_zero_and_unity_cols() throw() {
 		j = binary::find_next(buf_unit, n(), j + 1);
 	}
 
-	ui32 any = false;
+	ui32 any_left = false;
 	{
 		ui32 ind = 0;
 		do {
 			cols[ind] &= buf_zero[ind];
-			any |= cols[ind];
+			any_left |= cols[ind];
 			++ind;
 		} while (ind < size32_n());
 	}
-	return (any != 0);
+	return (any_left != 0) | (any_children << 1);
 }
 
 //void Dualizer_OPT::delete_zero_cols() throw() {
@@ -491,39 +458,6 @@ void Dualizer_OPT::delete_fobidden_cols2() throw() {
 //	}
 //}
 
-//char Dualizer_OPT::create_search_set(ui32* set) throw() {
-//	ui32* unobserved = static_cast<ui32*>(alloca(size32_m()*UI32_SIZE));
-//	ui32 buf = 0;
-//	ui32 ind = 0;
-//	for (ind = 0; ind < size32_m() - 1; ++ind) {
-//		unobserved[ind] = ~(covered_rows[ind] | rows[ind]);
-//		buf |= unobserved[ind];
-//	}
-//	unobserved[ind] = ~(covered_rows[ind] | rows[ind]) & mask32_m();
-//	buf |= unobserved[ind];
-//	
-//	if (buf == 0) {
-//		return 0;
-//	}
-//
-//	My_Memory::MM_memset(set, 0, size32_n()*UI32_SIZE);
-//	cols[size32_n() - 1] &= mask32_n();
-//	ui32 i = binary::find_next(unobserved, m(), 0);
-//	
-//	while (i < m()) {
-//		ui32* row_i = RE_32(matrix_ + i * size32_n());
-//		for (ind = 0; ind < size32_m(); ++ind) {
-//			set[ind] |= row_i[ind];
-//		}
-//		i = binary::find_next(unobserved, m(), i+1);
-//	}
-//	for (ind = 0; ind < size32_m(); ++ind) {
-//		set[ind] &= cols[ind];
-//	}
-//	return 1;
-//
-//}
-
 //void Dualizer_OPT::delete_fobidden_cols4() throw() {
 //	ui32 size_cov = covering.size();
 //	ui32* support_i = static_cast<ui32*>(alloca(size32_n() * UI32_SIZE));
@@ -673,7 +607,7 @@ void Dualizer_OPT::run(ui32 j) {
 			up_to_date = false;
 			continue;
 		}
-		++n_steps;
+		++n_vertices;
 		//reset j-th column
 		stack.reset_cols(*p_j, cols);
 		binary::reset(cols, *p_j);
@@ -710,8 +644,90 @@ void Dualizer_OPT::run(ui32 j) {
 		up_to_date = true;	
 		*p_j = 0;
 	}
-	n_steps += n_coverings;
+	n_vertices += n_coverings;
 }
+
+bool Dualizer_OPT::go_down(ui32 sum) throw() {
+	*p_j = 0;
+	*p_j = get_next_j();
+	assert(*p_j < n());
+	binary::reset(cols, *p_j);
+	++*p_depth;
+	if (sum > 1)
+		stack.push();
+	return true;
+}
+
+void Dualizer_OPT::run1() {
+	//this is a depth-first-search (DFS) without adding all children at once
+	//no extra copying carried out when performing DFS
+	//current tree node may be described by 7 variables:
+	//covering, rows, cols, support_rows, covered_rows, i, j
+	//where i is a row with minimal sum and j is a number of next column to add to covering
+	//they are stored in variable pool for efficiency
+	bool any_compliant = true;
+	bool any_left = true;
+	bool any_children = false;
+	ui32 sum = 0;
+	if (any_compliant) {
+		char tmp = process_zero_and_unity_cols();
+		any_left = tmp & 1;
+		any_children = (tmp & 2) >> 1;
+	}
+	if (any_left)
+		*p_i = get_next_i(sum);
+	if (!any_left || sum == 0)
+		return;
+
+	bool go_down_ind = go_down(sum);
+	
+
+	while (true) {
+		++n_vertices;
+		ui32 j1 = get_next_j();
+		if (j1 < n()) {
+			stack.update_j_next(j1, p_j);
+			stack.reset_cols(j1, cols);
+		} else if (!go_down_ind) {
+			stack.pop();
+		}
+		covering.append(*p_j);
+		update_covered_and_support_rows(*p_j);
+		delete_fobidden_cols();
+
+		any_compliant = binary::any(cols, n());
+		any_left = any_compliant;
+		any_children = false;		
+
+		if (any_compliant) {
+			char tmp = process_zero_and_unity_cols();
+			any_left = tmp & 1;
+			any_children = (tmp & 2) >> 1;
+		}
+
+		sum = 1;
+		if (any_left)
+			*p_i = get_next_i(sum);
+
+		if (!any_left || sum == 0) {
+			//go up
+			ui32 depth = *p_depth;
+			if (stack.empty())
+				break;
+			stack.copy_top();
+			covering.remove_last(depth - *p_depth + 1);
+			n_spare += !any_compliant | !any_children & (sum == 0);
+			go_down_ind = false;
+			continue;
+		}
+		go_down_ind = go_down(sum);		
+	}
+
+	n_vertices += n_coverings;
+}
+
+
+
 
 void Dualizer_OPT::init(
 	const binary::Matrix& L, 
@@ -745,6 +761,7 @@ void Dualizer_OPT::init(
 		binary::size(m_new) + //support_rows
 		1 + //p_j
 		1 + //p_i
+		1 + //p_depth
 		n_new* binary::size(m_new); //matrix_t_
 		//binary::size(n_new); //cov
 	if (L_to_check != nullptr) {
@@ -782,6 +799,7 @@ void Dualizer_OPT::init(
 		support_rows = dst; dst += size32_m();
 		p_j          = dst; dst += 1;
 		p_i          = dst; dst += 1;
+		p_depth      = dst; dst += 1;
 		stack.reserve(ui32(dst - dst0), 16, dst0);
 	}
 	//transposed matrix
@@ -816,6 +834,7 @@ void Dualizer_OPT::reinit() {
 	support_rows[size32_m() - 1] &= mask32_m();
 	*p_j = 0;
 	*p_i = 0;
+	*p_depth = 0;
 	if (m1() > 0) {
 		My_Memory::MM_memset(covered_rows_, 0, size32_m1() * UI32_SIZE);
 	}

@@ -13,7 +13,7 @@ protected:
 		void reserve(ui32 size, ui32 width, bool reset_frequency = true);
 		~Covering();
 		void append(ui32 num);
-		void remove_last();
+		void remove_last(ui32 num = 1);
 		ui32& top();
 		void print(FILE* p_file, bool extra = false);
 		ui32 operator[] (ui32 ind) const throw();		
@@ -60,8 +60,9 @@ public:
 	void reinit();
 	void clear() throw();
 	void run(ui32 j = ui32(~0));
+	void run1();
 	void print() {
-		printf("%u %u %u\n", n_coverings, n_steps, n_spare);
+		printf("%u %u %u\n", n_coverings, n_vertices, n_spare);
 		if (p_file == nullptr)
 			covering.print_freq(n());
 	}
@@ -73,15 +74,7 @@ protected:
 	ui32 get_next_i(ui32& sum) throw();
 
 	void update_covered_and_support_rows(ui32 j) throw();
-	bool process_zero_and_unity_cols() throw();
-
-	void process_unity_cols() throw();
-	void process_unity_cols1() throw();
-	void process_unity_cols2() throw();
-
-	void delete_zero_cols() throw();
-	void delete_zero_cols1() throw();
-	void delete_zero_cols2() throw();
+	char process_zero_and_unity_cols() throw();//returns (any_left != 0) | (any_children << 1)
 	
 	void delete_fobidden_cols()  throw();
 	void delete_fobidden_cols1() throw();
@@ -91,7 +84,7 @@ protected:
 	
 	void delete_le_rows() throw();
 
-	//char create_search_set(ui32* set) throw();
+	bool go_down(ui32 sum) throw();
 
 private:
 
@@ -122,6 +115,7 @@ private:
 	ui32* support_rows;
 	ui32* p_j;
 	ui32* p_i;
+	ui32*p_depth;
 	ui32* matrix_t_;
 	ui32* covered_rows_;
 	ui32* matrix_to_cover_t_;
@@ -133,9 +127,8 @@ private:
 	ui32 n_;
 	ui32 m1_;
 	ui32 n_coverings;
-	ui32 n_steps;
+	ui32 n_vertices;
 	ui32 n_spare;
 	ui32 pool_size_;
 	FILE* p_file;
-	//char* file_buffer_;
 };
