@@ -510,44 +510,48 @@ void Dualizer_OPT::delete_fobidden_cols2() throw() {
 //}
 
 ui32 Dualizer_OPT::get_next_j() throw() {
-	ui32 const* row_i = matrix_ + *p_i * size32_n();
+	return binary::find_next(cols, n(), *p_j);
 
-	ui32 ind = *p_j >> UI32_LOG2BIT;
-	ui32 offset = *p_j & UI32_MASK;
-
-	ui32 buf = ((row_i[ind] & cols[ind]) >> offset) << offset;
-	if (buf == 0) {
-		do {
-			++ind;
-			buf = row_i[ind] & cols[ind];
-		} while ((ind < size32_n()) & (buf == 0));
-	}
-	offset = tzcnt32(buf);
-	return (ind << UI32_LOG2BIT) + offset;
+	//ui32 const* row_i = matrix_ + *p_i * size32_n();
+	//
+	//ui32 ind = *p_j >> UI32_LOG2BIT;
+	//ui32 offset = *p_j & UI32_MASK;
+	//
+	//ui32 buf = ((row_i[ind] & cols[ind]) >> offset) << offset;
+	//if (buf == 0) {
+	//	do {
+	//		++ind;
+	//		buf = row_i[ind] & cols[ind];
+	//	} while ((ind < size32_n()) & (buf == 0));
+	//}
+	//offset = tzcnt32(buf);
+	//return (ind << UI32_LOG2BIT) + offset;
 }
 
 ui32 Dualizer_OPT::get_next_i(ui32& sum0) throw() {
-	ui32 i_min = 0;
-	ui32 sum_min = n() + 1;
-	cols[size32_n() - 1] &= mask32_n();
-
-	ui32 i = binary::find_next(rows, m(), 0);
-	while (i < m()) {
-		ui32 const* row_i = matrix_ + i * size32_n();
-		ui32 sum = 0;
-		ui32 ind = 0;
-		do {
-			sum += popcnt32(row_i[ind] & cols[ind]);
-			++ind;
-		} while (ind < size32_n());
-		if (sum < sum_min) {
-			i_min = i;
-			sum_min = sum;
-		}
-		i = binary::find_next(rows, m(), i + 1);
-	}
-	sum0 = sum_min;
-	return i_min;
+	sum0 = binary::popcount(cols, n());
+	return 0;
+	//ui32 i_min = 0;
+	//ui32 sum_min = n() + 1;
+	//cols[size32_n() - 1] &= mask32_n();
+	//
+	//ui32 i = binary::find_next(rows, m(), 0);
+	//while (i < m()) {
+	//	ui32 const* row_i = matrix_ + i * size32_n();
+	//	ui32 sum = 0;
+	//	ui32 ind = 0;
+	//	do {
+	//		sum += popcnt32(row_i[ind] & cols[ind]);
+	//		++ind;
+	//	} while (ind < size32_n());
+	//	if (sum < sum_min) {
+	//		i_min = i;
+	//		sum_min = sum;
+	//	}
+	//	i = binary::find_next(rows, m(), i + 1);
+	//}
+	//sum0 = sum_min;
+	//return i_min;
 }
 
 void Dualizer_OPT::run(ui32 j) {
@@ -669,6 +673,7 @@ void Dualizer_OPT::run1() {
 	bool any_left = true;
 	bool any_children = false;
 	ui32 sum = 0;
+	delete_le_rows();
 	if (any_compliant) {
 		char tmp = process_zero_and_unity_cols();
 		any_left = tmp & 1;
@@ -700,6 +705,7 @@ void Dualizer_OPT::run1() {
 		any_children = false;		
 
 		if (any_compliant) {
+			delete_le_rows();
 			char tmp = process_zero_and_unity_cols();
 			any_left = tmp & 1;
 			any_children = (tmp & 2) >> 1;
@@ -716,7 +722,7 @@ void Dualizer_OPT::run1() {
 				break;
 			stack.copy_top();
 			covering.remove_last(depth - *p_depth + 1);
-			n_spare += !any_compliant | !any_children & (sum == 0);
+			n_spare += !any_compliant | !any_children;
 			go_down_ind = false;
 			continue;
 		}
