@@ -55,8 +55,10 @@ namespace binary {
 		~Matrix() { reserve(0, 0); }
 
 		//io functions
-		void read(FILE* pFile);
-		void read(const char* file_name);
+		void read_bm(FILE* pFile);
+		void read_hg1(FILE* p_file, ui32& m, ui32& n, bool preread);
+		void read_hg(FILE* pFile);
+		void read(const char* file_name, bool bm = true);
 		void print_bm(FILE* pFile) const;
 		void print_0x(FILE* pFile) const;
 		void print_hg(FILE* pFile) const;

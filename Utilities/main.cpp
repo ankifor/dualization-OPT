@@ -12,6 +12,7 @@ int main(int argc, char** argv) {
 		std::string help = 
 			"-random <file_out> <m> <n> <prob> <seed>\n"
 			"-sort <file_in> <file_out>\n"
+			"-hg <file_in>"
 			;
 		if (argc < 2)
 			throw std::runtime_error(string("not enough arguments:\n") + help);
@@ -36,6 +37,10 @@ int main(int argc, char** argv) {
 			L1.sort_cols(L);
 			L1.print(argv[3], "bm");
 			L1.print(argv[3], "hg");
+		} else if (strcmp(argv[1], "-hg") == 0) {
+			binary::Matrix L;
+			L.read(argv[2], false);
+			L.print_bm(stdout);
 		} else {
 			throw std::runtime_error(string("invalid input:\n") + help);
 		}

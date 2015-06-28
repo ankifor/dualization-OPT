@@ -225,18 +225,18 @@ void binary::Matrix::random(ui32 m, ui32 n, float d) {
 io functions
 **********************************************************/
 
-static void read_get_width_and_check(FILE* p_file, ui32& m, ui32& n) {
+static void preread_bm(FILE* p_file, ui32& m, ui32& n) {
 	char ch = 0;
 	char state = 0;
 	ui32 n0 = 0;
 	fpos_t pos;
 	if (fgetpos(p_file, &pos) != 0)
-		throw std::runtime_error(string("read_get_width::") + std::strerror(errno));
+		throw std::runtime_error(string("read_bm1::") + std::strerror(errno));
 
 	while (state<10 && ch != char(EOF)) {
 		ch = static_cast<char>(fgetc(p_file));
 		if (ferror(p_file))
-			throw std::runtime_error(string("read_get_width::") + std::strerror(errno));
+			throw std::runtime_error(string("read_bm1::") + std::strerror(errno));
 		//printf("ch = %d, state = %d, EOF = %d, m = %d, n = %d, n0 = %d, \\n = %d, \\r = %d\n", ch, state, char(EOF), m, n, n0, '\n', '\r');
 		switch (state) {
 		case 0:
@@ -280,9 +280,94 @@ static void read_get_width_and_check(FILE* p_file, ui32& m, ui32& n) {
 	}//while
 	n = n0;
 	if (state == 10)
-		throw std::runtime_error("read_get_width::Invalid file format");
+		throw std::runtime_error("read_bm1::Invalid file format");
 	if (fsetpos(p_file, &pos) != 0)
-		throw std::runtime_error(string("read_get_width::") + std::strerror(errno));
+		throw std::runtime_error(string("read_bm1::") + std::strerror(errno));
+}
+
+void binary::Matrix::read_hg1(FILE* p_file, ui32& m, ui32& n, bool preread) {
+	char ch = 0;
+	char state = 0;
+	ui32 x = 0;
+	m = n = 0;
+	fpos_t pos;
+	if (fgetpos(p_file, &pos) != 0)
+		throw std::runtime_error(string("read_hg1::") + std::strerror(errno));
+
+	while (state<10 && ch != char(EOF)) {
+		ch = static_cast<char>(fgetc(p_file));
+		if (ferror(p_file))
+			throw std::runtime_error(string("read_hg1::") + std::strerror(errno));
+		if (ch == '\r') 
+			continue;
+		//printf("ch = %d, state = %d, EOF = %d, m = %d, n = %d, n0 = %d, \\n = %d, \\r = %d\n", ch, state, char(EOF), m, n, n0, '\n', '\r');
+
+		switch (state) {
+		case 0:
+			if ( (unsigned)(ch-'0') < 10 ) {
+				state = 1;
+				x = ch - '0';
+			} else if (ch == ' ') {
+				;//skip
+			} else if (ch == char(EOF) || ch == '\n') {
+				state = 11;
+			} else {
+				state = 10;//error
+			}
+			break;
+		case 1:
+			if ( (unsigned)(ch - '0') < 10 ) {
+				x = 10 * x + (ch - '0');
+			} else {
+				if (preread) {
+					if (x > n)
+						n = x;
+				} else {
+					set(m, x);
+				}
+
+				x = 0;
+
+				if (ch == ' ') {
+					state = 2;
+				} else if (ch == '\n') {
+					state = 0;
+					++m;
+				} else if (ch == char(EOF)) {
+					state = 11;
+					++m;
+				} else {
+					state = 10;
+				}
+			}
+			break;
+		case 2:
+			if ((unsigned) (ch - '0') < 10) {
+				state = 1;
+				x = ch - '0';
+			} else if (ch == ' ') {
+				;//skip
+			} else if (ch == '\n') {
+				state = 0;
+				++m;
+			} else if (ch == char(EOF)) {
+				state = 11;
+				++m;
+			} else {
+				state = 10;
+			}
+			break;
+		default:
+			state = 10;
+			break;
+		}//switch
+	}//while
+	if (state == 10)
+		throw std::runtime_error("read_hg1::Invalid file format");
+	
+	if (preread && fsetpos(p_file, &pos) != 0)
+		throw std::runtime_error(string("read_hg1::") + std::strerror(errno));
+	++n;
 }
 
 static char skip_space(FILE* p_file) {
@@ -293,10 +378,10 @@ static char skip_space(FILE* p_file) {
 	return ch;
 }
 
-void binary::Matrix::read(FILE* p_file) {
+void binary::Matrix::read_bm(FILE* p_file) {
 	ui32 m = 0;
 	ui32 n = 0;
-	read_get_width_and_check(p_file, m, n);
+	preread_bm(p_file, m, n);
 	reserve(m, n);
 	My_Memory::MM_memset(data_, 0, m*row_size()*UI32_SIZE);
 	for (ui32 i = 0; i < m_; ++i) {
@@ -305,16 +390,29 @@ void binary::Matrix::read(FILE* p_file) {
 				set(i, j);
 		}
 	}
-
 }
 
-void binary::Matrix::read(const char* file_name) {
+void binary::Matrix::read_hg(FILE* p_file) {
+	ui32 m = 0;
+	ui32 n = 0;
+	read_hg1(p_file, m, n, true);
+	printf("%d %d\n", m, n);
+	reserve(m, n);
+	My_Memory::MM_memset(data_, 0, m*row_size()*UI32_SIZE);
+	read_hg1(p_file, m, n, false);
+}
+
+void binary::Matrix::read(const char* file_name, bool bm) {
 	FILE* p_file = fopen(file_name, "r");
 	if (p_file == nullptr) {
 		throw std::runtime_error(string("binary::Matrix::read::") + std::strerror(errno));
 	}
 	try {
-		read(p_file);
+		if (bm) {
+			read_bm(p_file);
+		} else {
+			read_hg(p_file);
+		}
 	} catch (...) {
 		fclose(p_file);
 		throw;
@@ -361,7 +459,7 @@ void binary::Matrix::print_hg(FILE* p_file) const {
 		ui32 const* row_i = row(i);
 		j = binary::find_next(row_i, n_, 0);
 		while (j < n_) {
-			fprintf(p_file, "%d ", j + 1);
+			fprintf(p_file, "%d ", j);
 			j = binary::find_next(row_i, n_, j + 1);
 		}
 		fputc('\n', p_file);
