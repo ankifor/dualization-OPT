@@ -5,6 +5,8 @@
 
 using namespace std;
 
+
+
 int main(int argc, char** argv) {	
 
 	try {
@@ -12,7 +14,9 @@ int main(int argc, char** argv) {
 		std::string help = 
 			"-random <file_out> <m> <n> <prob> <seed>\n"
 			"-sort <file_in> <file_out>\n"
-			"-hg <file_in>"
+			"-convert <file_in> <file_out>\n"
+			"valid extensions for input: bm, hg, packed\n"
+			"valid extensions for output: bm, hg, packed, 0x\n"
 			;
 		if (argc < 2)
 			throw std::runtime_error(string("not enough arguments:\n") + help);
@@ -26,32 +30,22 @@ int main(int argc, char** argv) {
 			srand(seed);
 			binary::Matrix L;
 			L.random(m, n, d);
-			L.print(argv[2], "bm");
-			L.print(argv[2], "hg");
+			L.print(argv[2], nullptr);
 		} else if (strcmp(argv[1], "-sort") == 0) {
 			if (argc < 4)
 				throw std::runtime_error(string("not enough arguments:\n") + help);
 			binary::Matrix L;
-			L.read(argv[2]);
+			L.read(argv[2], nullptr);
 			binary::Matrix L1;
 			L1.sort_cols(L);
-			L1.print(argv[3], "bm");
-			L1.print(argv[3], "hg");
-		} else if (strcmp(argv[1], "-hg") == 0) {
+			L1.print(argv[3], nullptr);
+		} else if (strcmp(argv[1], "-convert") == 0) {
 			binary::Matrix L;
-			L.read(argv[2], false);
-			L.print_bm(stdout);
+			L.read(argv[2], nullptr);
+			L.print(argv[3], nullptr);
 		} else {
 			throw std::runtime_error(string("invalid input:\n") + help);
 		}
-		
-
-		//L.print_bm(stdout);
-		//fputc('\n', stdout);
-		//u = atoi(argv[6]);
-		//L1.random_stripe(L, u);
-		//L1.print_bm(stdout);
-
 	} catch (runtime_error& rte) {
 		std::cout << rte.what();
 		return 1;

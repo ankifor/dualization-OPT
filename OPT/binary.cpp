@@ -21,6 +21,18 @@
 
 using namespace std;
 
+#ifndef NDEBUG
+int My_Memory::free_times = 0;
+int My_Memory::malloc_times = 0;
+int My_Memory::malloc_size = 0;
+int My_Memory::memset_times = 0;
+int My_Memory::memcpy_times = 0;
+int My_Memory::memcmp_times = 0;
+int My_Memory::memcpy_size = 0;
+int My_Memory::memcmp_size = 0;
+int My_Memory::memset_size = 0;
+#endif
+
 ui32 binary::popcount(const ui32* p, ui32 bitsize) {
 		assert(bitsize > 0);
 		ui32 sum = 0;
@@ -285,7 +297,7 @@ static void preread_bm(FILE* p_file, ui32& m, ui32& n) {
 		throw std::runtime_error(string("read_bm1::") + std::strerror(errno));
 }
 
-void binary::Matrix::read_hg1(FILE* p_file, ui32& m, ui32& n, bool preread) {
+void binary::Matrix::read_hg1(FILE* p_file, ui32& m, ui32& n, bool preread, bool& start_from_zero) {
 	char ch = 0;
 	char state = 0;
 	ui32 x = 0;
@@ -320,10 +332,12 @@ void binary::Matrix::read_hg1(FILE* p_file, ui32& m, ui32& n, bool preread) {
 				x = 10 * x + (ch - '0');
 			} else {
 				if (preread) {
+					if (x == 0)
+						start_from_zero = true;
 					if (x > n)
 						n = x;
 				} else {
-					set(m, x);
+						set(m, x - !start_from_zero);
 				}
 
 				x = 0;
@@ -367,7 +381,7 @@ void binary::Matrix::read_hg1(FILE* p_file, ui32& m, ui32& n, bool preread) {
 	
 	if (preread && fsetpos(p_file, &pos) != 0)
 		throw std::runtime_error(string("read_hg1::") + std::strerror(errno));
-	++n;
+	n += start_from_zero;
 }
 
 static char skip_space(FILE* p_file) {
@@ -395,23 +409,43 @@ void binary::Matrix::read_bm(FILE* p_file) {
 void binary::Matrix::read_hg(FILE* p_file) {
 	ui32 m = 0;
 	ui32 n = 0;
-	read_hg1(p_file, m, n, true);
-	printf("%d %d\n", m, n);
+	bool start_from_zero = false;
+	read_hg1(p_file, m, n, true, start_from_zero);
+	//printf("%d %d\n", m, n);
 	reserve(m, n);
 	My_Memory::MM_memset(data_, 0, m*row_size()*UI32_SIZE);
-	read_hg1(p_file, m, n, false);
+	read_hg1(p_file, m, n, false, start_from_zero);
 }
 
-void binary::Matrix::read(const char* file_name, bool bm) {
+void binary::Matrix::read_packed(FILE* p_file) {
+	ui32 sz[2];
+	fread(&sz[0], UI32_SIZE, 2, p_file);
+	reserve(sz[0], sz[1]);
+	fread(data_, UI32_SIZE, size32(), p_file);
+	if (ferror(p_file) != 0)
+		throw std::runtime_error(string("binary::Matrix::read_packed::") + std::strerror(errno));
+}
+
+void binary::Matrix::read(const char* file_name, const char* mode) {
 	FILE* p_file = fopen(file_name, "r");
-	if (p_file == nullptr) {
+	if (p_file == nullptr)
 		throw std::runtime_error(string("binary::Matrix::read::") + std::strerror(errno));
-	}
+
 	try {
-		if (bm) {
+		if (mode == nullptr) {
+			mode = strrchr(file_name, '.');
+			if (mode == nullptr)
+				throw std::runtime_error("binary::Matrix::read::no file extension and no mode");
+			++mode;
+		}
+		if (strcmp(mode, "bm") == 0) {
 			read_bm(p_file);
-		} else {
+		} else if (strcmp(mode, "hg") == 0) {
 			read_hg(p_file);
+		} else if (strcmp(mode, "packed") == 0) {
+			read_packed(p_file);
+		} else {
+			throw std::runtime_error("binary::Matrix::read::invalid mode");
 		}
 	} catch (...) {
 		fclose(p_file);
@@ -434,7 +468,7 @@ void binary::Matrix::print_bm(FILE* p_file) const {
 	for (ui32 i = 0; i < m_; ++i) {
 		for (ui32 j = 0; j < n_; ++j) {
 			fputc((at(i, j) != 0) + '0', p_file);
-			fputc(' ', p_file);
+			//fputc(' ', p_file);
 		}
 		fputc('\n', p_file);
 	}
@@ -468,21 +502,38 @@ void binary::Matrix::print_hg(FILE* p_file) const {
 		throw std::runtime_error(string("binary::Matrix::print::") + std::strerror(errno));
 }
 
+void binary::Matrix::print_packed(FILE* p_file) const {
+	fwrite(&m_, UI32_SIZE, 1, p_file);
+	fwrite(&n_, UI32_SIZE, 1, p_file);
+	fwrite(data_, UI32_SIZE, size32(), p_file);
+	if (ferror(p_file) != 0)
+		throw std::runtime_error(string("binary::Matrix::read_packed::") + std::strerror(errno));
+}
+
 void binary::Matrix::print(const char* file_name, const char* mode) const {
-	std::string file_out = file_name;
-	file_out += ".";
-	file_out += std::string(mode);
-	FILE* p_file = fopen(file_out.c_str(), "w");
-	if (p_file == nullptr) {
+	//std::string file_out = file_name;
+	//file_out += ".";
+	//file_out += std::string(mode);
+	FILE* p_file = fopen(file_name, "w");
+	if (p_file == nullptr)
 		throw std::runtime_error(std::string("binary::Matrix::print::") + std::strerror(errno));
-	}
+
 	try {
+
+		if (mode == nullptr) {
+			mode = strrchr(file_name, '.');
+			if (mode == nullptr)
+				throw std::runtime_error("binary::Matrix::print::no file extension and no mode");
+			++mode;
+		}
 		if (strcmp(mode, "bm") == 0) {
 			print_bm(p_file);
 		} else if (strcmp(mode, "hg") == 0) {
 			print_hg(p_file);
 		} else if (strcmp(mode, "0x") == 0) {
 			print_0x(p_file);
+		} else if (strcmp(mode, "packed") == 0) {
+			print_packed(p_file);
 		} else {
 			throw std::runtime_error("binary::Matrix::print::invalid mode");
 		}

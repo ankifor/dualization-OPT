@@ -56,12 +56,14 @@ namespace binary {
 
 		//io functions
 		void read_bm(FILE* pFile);
-		void read_hg1(FILE* p_file, ui32& m, ui32& n, bool preread);
+		void read_hg1(FILE* p_file, ui32& m, ui32& n, bool preread, bool& start_from_zero);
 		void read_hg(FILE* pFile);
-		void read(const char* file_name, bool bm = true);
+		void read_packed(FILE* pFile);
+		void read(const char* file_name, const char* mode = "bm");
 		void print_bm(FILE* pFile) const;
 		void print_0x(FILE* pFile) const;
 		void print_hg(FILE* pFile) const;
+		void print_packed(FILE* pFile) const;
 		void print(const char* file_name, const char* mode = "bm") const;
 		//special functions
 		Matrix& delete_le_rows() throw();
