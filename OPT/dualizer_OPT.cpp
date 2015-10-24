@@ -726,9 +726,6 @@ void Dualizer_OPT::run1() {
 	n_vertices += n_coverings;
 }
 
-
-
-
 void Dualizer_OPT::init(
 	const binary::Matrix& L, 
 	const char* file_name, 

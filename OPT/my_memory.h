@@ -39,8 +39,7 @@ public:
 #ifdef NDEBUG
 		return memset(dst, val, size);
 #else
-		void* data = nullptr;
-		data = memset(dst, val, size);
+		void* data = memset(dst, val, size);
 		memset_size += size;
 		++memset_times;
 		return data;
@@ -51,8 +50,7 @@ public:
 #ifdef NDEBUG
 		return memcpy(dst, src, size);
 #else 
-		void* data = nullptr;
-		data = memcpy(dst, src, size);
+		void* data = memcpy(dst, src, size);
 		memcpy_size += size;
 		++memcpy_times;
 		return data;

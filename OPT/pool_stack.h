@@ -41,7 +41,7 @@ public:
 				start_ = static_cast<ui32*>(My_Memory::MM_malloc(capacity*element_size_*UI32_SIZE));
 				if (capacity_ > 0) {
 					My_Memory::MM_memcpy(start_, buf, capacity_*element_size_*UI32_SIZE);
-					top_ = start_ + (buf - top_);
+					top_ = start_ + (top_ - buf);
 					My_Memory::MM_free(buf);
 				} else {
 					top_ = start_;
@@ -64,7 +64,7 @@ public:
 	}
 
 	void push_empty() {
-		if (size() >= capacity_) {
+		if (size() + 1 >= capacity_) {
 			ui32 capacity = capacity_ * 2 + (AllocateSpace + element_size_ - 1) / element_size_;
 			reserve(capacity);
 		}
